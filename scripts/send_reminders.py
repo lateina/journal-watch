@@ -37,6 +37,7 @@ def send_email(to_email, presenter_name, date_str):
     msg = MIMEMultipart()
     msg['From'] = EMAIL_USER
     msg['To'] = to_email
+    msg['Bcc'] = EMAIL_USER
     msg['Subject'] = subject
     msg.attach(MIMEText(body, 'plain'))
     
@@ -45,9 +46,9 @@ def send_email(to_email, presenter_name, date_str):
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASS)
         text = msg.as_string()
-        server.sendmail(EMAIL_USER, to_email, text)
+        server.sendmail(EMAIL_USER, [to_email, EMAIL_USER], text)
         server.quit()
-        print(f"Email sent to {to_email}")
+        print(f"Email sent to {to_email} (BCC: {EMAIL_USER})")
     except Exception as e:
         print(f"Failed to send email to {to_email}: {e}")
 
