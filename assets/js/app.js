@@ -47,9 +47,15 @@ async function loadSchedule() {
 async function loadEmployees() {
     try {
         currentEmployees = await fetchData(EMPLOYEES_BIN_ID);
+        if (!Array.isArray(currentEmployees)) {
+            console.warn("Mitarbeiter-Daten sind kein Array. Initialisiere neu.", currentEmployees);
+            currentEmployees = [];
+        }
         renderEmployees();
     } catch (e) {
         console.warn("Fehler beim Laden der Mitarbeiter:", e);
+        currentEmployees = []; // Fallback
+        renderEmployees();
     }
 }
 
@@ -82,8 +88,8 @@ function renderSchedule() {
         let topicCell = slot.topic || '';
 
         if (isAdmin) {
-            presenterCell = `<input class="edit-field" value="${slot.presenter || ''}" onchange="updateSchedule(${index}, 'presenter', this.value)" placeholder="Name">`;
-            topicCell = `<input class="edit-field" value="${slot.topic || ''}" onchange="updateSchedule(${index}, 'topic', this.value)" placeholder="Thema">`;
+            presenterCell = `<input class="edit-field" value="${slot.presenter || ''}" onchange="updateSlot(${index}, 'presenter', this.value)" placeholder="Name">`;
+            topicCell = `<input class="edit-field" value="${slot.topic || ''}" onchange="updateSlot(${index}, 'topic', this.value)" placeholder="Thema">`;
         }
 
         row.innerHTML = `
@@ -149,20 +155,21 @@ function updateAdminUI() {
 
 // --- Updates (Memory) ---
 
-function updateSchedule(index, field, value) {
+window.updateSlot = function (index, field, value) {
     currentSchedule[index][field] = value;
 }
 
-function updateEmployee(index, field, value) {
+window.updateEmployee = function (index, field, value) {
     currentEmployees[index][field] = value;
 }
 
-function addEmployee() {
+window.addEmployee = function () {
+    if (!currentEmployees) currentEmployees = [];
     currentEmployees.push({ name: "Neu", email: "@", active: true });
     renderEmployees();
 }
 
-function deleteEmployee(index) {
+window.deleteEmployee = function (index) {
     if (confirm("Mitarbeiter wirklich löschen?")) {
         currentEmployees.splice(index, 1);
         renderEmployees();
