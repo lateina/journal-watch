@@ -1,0 +1,12 @@
+[
+    {
+        "name": "Dr. Example",
+        "email": "dr.example@test.com",
+        "active": true
+    },
+    {
+        "name": "Prof. Sample",
+        "email": "prof.sample@test.com",
+        "active": true
+    }
+]

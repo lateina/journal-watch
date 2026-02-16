@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journal Watch Schedule</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Journal Watch Schedule</h1>
+            <p>Upcoming Presentations</p>
+        </header>
+        
+        <main>
+            <div id="loading">Loading schedule...</div>
+            <div id="error-message" class="hidden"></div>
+            
+            <table id="schedule-table" class="hidden">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Day</th>
+                        <th>Presenter</th>
+                        <th>Topic (Optional)</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-body">
+                    <!-- Rows will be inserted here -->
+                </tbody>
+            </table>
+        </main>
+        
+        <footer>
+            <p>&copy; 2026 Journal Watch</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
