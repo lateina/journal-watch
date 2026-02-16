@@ -7,9 +7,46 @@ let currentSchedule = [];
 let currentEmployees = [];
 let isAdmin = false;
 
+function setupEventListeners() {
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => switchTab(e.target.getAttribute('data-tab')));
+    });
+
+    // Admin Buttons
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) loginBtn.addEventListener('click', showLogin);
+
+    // Modal Buttons
+    const modLoginBtn = document.querySelector('#login-box button:first-of-type'); // Login
+    const modCancelBtn = document.querySelector('#login-box button:last-of-type'); // Cancel
+    if (modLoginBtn) modLoginBtn.addEventListener('click', checkLogin);
+    if (modCancelBtn) modCancelBtn.addEventListener('click', hideLogin);
+
+    // Save/Logout
+    const saveBtn = document.querySelector('.save-btn');
+    if (saveBtn) saveBtn.addEventListener('click', saveSchedule);
+
+    const logoutBtn = document.querySelector('#admin-panel button:last-of-type'); // Logout
+    if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+    // Add Employee
+    const addEmpBtn = document.getElementById('add-employee-btn');
+    if (addEmpBtn) {
+        addEmpBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log("Add Employee Clicked via Event Listener");
+            addEmployee();
+        });
+    }
+}
+
 // --- Initialization ---
 
 async function init() {
+    console.log("App initializing...");
+    setupEventListeners(); // Bind events first
+
     // Check local storage for session
     if (localStorage.getItem('journal_admin_session') === 'true') {
         isAdmin = true;

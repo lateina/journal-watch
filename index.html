@@ -127,31 +127,12 @@
         </header>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('schedule')">Terminplan</button>
-            <button class="tab-btn" onclick="switchTab('employees')">Mitarbeiter</button>
+            <button class="tab-btn active" data-tab="schedule">Terminplan</button>
+            <button class="tab-btn" data-tab="employees">Mitarbeiter</button>
         </div>
 
         <main>
-            <div id="loading">Lade Daten...</div>
-            <div id="error-message" class="hidden"></div>
-
-            <!-- Schedule Tab -->
-            <div id="tab-schedule" class="tab-content">
-                <table id="schedule-table" class="hidden">
-                    <thead>
-                        <tr>
-                            <th>Datum</th>
-                            <th>Tag</th>
-                            <th>Referent</th>
-                            <th>Thema (Optional)</th>
-                            <th class="admin-col hidden">Aktion</th>
-                        </tr>
-                    </thead>
-                    <tbody id="schedule-body">
-                        <!-- Rows will be inserted here -->
-                    </tbody>
-                </table>
-            </div>
+            <!-- ... -->
 
             <!-- Employee Tab -->
             <div id="tab-employees" class="tab-content hidden">
@@ -168,18 +149,18 @@
                         <!-- Rows will be inserted here -->
                     </tbody>
                 </table>
-                <button id="add-employee-btn" class="hidden" onclick="addEmployee()">+ Neuer Mitarbeiter</button>
+                <button id="add-employee-btn" class="hidden">+ Neuer Mitarbeiter</button>
             </div>
         </main>
 
         <footer>
             <p>&copy; 2026 Journal Watch</p>
             <div id="admin-controls">
-                <button id="login-btn" onclick="showLogin()">Admin Login</button>
+                <button id="login-btn">Admin Login</button>
                 <div id="admin-panel" class="hidden">
                     <p>Admin Modus Aktiv</p>
-                    <button class="save-btn" onclick="saveSchedule()">Änderungen speichern</button>
-                    <button onclick="logout()">Logout</button>
+                    <button class="save-btn">Änderungen speichern</button>
+                    <button id="logout-btn">Logout</button>
                 </div>
             </div>
         </footer>
