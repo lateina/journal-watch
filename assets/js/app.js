@@ -211,6 +211,12 @@ function renderSchedule() {
             <td>${presenterCell}</td>
             <td class="center-text">${combinedStatsCell}</td>
             <td class="center-text">${forgottenCell}</td>
+            <td class="center-text">
+                <select class="swap-select" onchange="handleSwap(${index}, this.value)">
+                    <option value="">Tauschen...</option>
+                    ${currentEmployees.filter(e => e.active && e.name !== slot.presenter).map(e => `<option value="${e.name}">${e.name}</option>`).join('')}
+                </select>
+            </td>
             <td>${topicCell}</td>
             <td class="admin-col ${isAdmin ? '' : 'hidden'}"></td>
         `;
