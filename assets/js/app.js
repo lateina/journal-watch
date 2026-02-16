@@ -14,12 +14,18 @@ async function init() {
     if (localStorage.getItem('journal_admin_session') === 'true') {
         isAdmin = true;
         document.getElementById('login-btn').classList.add('hidden');
-        document.getElementById('admin-panel').classList.remove('hidden');
+        const adminPanel = document.getElementById('admin-panel');
+        if (adminPanel) adminPanel.classList.remove('hidden');
     }
 
+    setupTabs();
+
+    // Load data
     await loadSchedule();
     await loadEmployees();
-    setupTabs();
+
+    // Ensure UI reflects admin state AFTER loading
+    updateAdminUI();
 }
 
 document.addEventListener('DOMContentLoaded', init);
