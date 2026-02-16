@@ -75,3 +75,9 @@ tr:hover {
 .holiday-row td {
     opacity: 0.8;
 }
+
+.forgotten-row {
+    text-decoration: line-through;
+    color: #e74c3c;
+    background-color: #fadbd8;
+}

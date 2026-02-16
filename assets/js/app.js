@@ -130,7 +130,8 @@ function renderSchedule() {
     // Calculate stats
     const stats = {};
     currentSchedule.forEach(s => {
-        if (s.presenter && s.presenter !== "" && !checkHoliday(new Date(s.date))) {
+        // Only count if assigned AND NOT forgotten AND NOT holiday
+        if (s.presenter && s.presenter !== "" && !s.forgotten && !checkHoliday(new Date(s.date))) {
             stats[s.presenter] = (stats[s.presenter] || 0) + 1;
         }
     });
@@ -147,6 +148,7 @@ function renderSchedule() {
         let topicCell = slot.topic || '';
         let isHoliday = false;
         let countCell = "";
+        let forgottenCell = "";
 
         if (holidayName) {
             isHoliday = true;
@@ -154,9 +156,20 @@ function renderSchedule() {
             presenterCell = `<strong>${holidayName}</strong>`;
             topicCell = "Kein Journal Watch";
             countCell = "-";
+            forgottenCell = "-";
         } else {
             const count = (slot.presenter && stats[slot.presenter]) ? stats[slot.presenter] : 0;
             countCell = count > 0 ? count : "-";
+
+            // Forgotten Checkbox
+            if (isAdmin && slot.presenter) {
+                const checked = slot.forgotten ? 'checked' : '';
+                forgottenCell = `<input type="checkbox" ${checked} onchange="toggleForgotten(${index}, this.checked)">`;
+            } else {
+                forgottenCell = slot.forgotten ? "Ja" : "";
+            }
+
+            if (slot.forgotten) row.classList.add('forgotten-row');
         }
 
         if (isAdmin && !isHoliday) {
@@ -188,11 +201,12 @@ function renderSchedule() {
             <td>${dayName}</td>
             <td>${presenterCell}</td>
             <td>${countCell}</td>
+            <td>${forgottenCell}</td>
             <td>${topicCell}</td>
             <td class="admin-col ${isAdmin ? '' : 'hidden'}"></td>
         `;
 
-        if (slot.date < today && !isHoliday) row.style.opacity = '0.5';
+        if (slot.date < today && !isHoliday && !slot.forgotten) row.style.opacity = '0.5';
         tbody.appendChild(row);
     });
 
