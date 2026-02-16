@@ -350,18 +350,24 @@ window.updateSlot = function (index, field, value) {
 
 window.updateEmployee = function (index, field, value) {
     currentEmployees[index][field] = value;
+    // If name or active status changes, we must re-render the schedule dropdowns
+    if (field === 'name' || field === 'active') {
+        renderSchedule();
+    }
 }
 
 window.addEmployee = function () {
     if (!currentEmployees) currentEmployees = [];
     currentEmployees.push({ name: "Neu", email: "@", active: true });
     renderEmployees();
+    renderSchedule(); // Update dropdowns immediately
 }
 
 window.deleteEmployee = function (index) {
     if (confirm("Mitarbeiter wirklich löschen?")) {
         currentEmployees.splice(index, 1);
         renderEmployees();
+        renderSchedule(); // Update dropdowns immediately
     }
 }
 
