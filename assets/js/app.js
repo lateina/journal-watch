@@ -155,19 +155,23 @@ function renderSchedule() {
         let isHoliday = false;
         let countCell = "";
         let forgottenCell = "";
-        let forgottenCountCell = "";
+        let combinedStatsCell = "";
 
         if (holidayName) {
             isHoliday = true;
             row.classList.add('holiday-row');
             presenterCell = `<strong>${holidayName}</strong>`;
             topicCell = "Kein Journal Watch";
-            countCell = "-";
+            combinedStatsCell = "-";
             forgottenCell = "-";
-            forgottenCountCell = "-";
         } else {
             const count = (slot.presenter && stats[slot.presenter]) ? stats[slot.presenter] : 0;
-            countCell = count > 0 ? count : "-";
+            const fCount = (slot.presenter && forgottenStats[slot.presenter]) ? forgottenStats[slot.presenter] : 0;
+
+            // Format: "Held / Forgotten"
+            // Highlight forgotten count in red if > 0
+            const fCountDisplay = fCount > 0 ? `<span style="color:red; font-weight:bold;">${fCount}</span>` : "0";
+            combinedStatsCell = `${count} / ${fCountDisplay}`;
 
             // Forgotten Checkbox
             if (isAdmin && slot.presenter) {
@@ -176,10 +180,6 @@ function renderSchedule() {
             } else {
                 forgottenCell = slot.forgotten ? "Ja" : "";
             }
-
-            // Forgotten Count
-            const fCount = (slot.presenter && forgottenStats[slot.presenter]) ? forgottenStats[slot.presenter] : 0;
-            forgottenCountCell = fCount > 0 ? `<span style="color:red; font-weight:bold;">${fCount}</span>` : "-";
 
             if (slot.forgotten) row.classList.add('forgotten-row');
         }
@@ -202,19 +202,14 @@ function renderSchedule() {
 
             presenterCell = `<select class="edit-field" onchange="updateSlot(${index}, 'presenter', this.value)">${options}</select>`;
             topicCell = `<input class="edit-field" value="${slot.topic || ''}" onchange="updateSlot(${index}, 'topic', this.value)" placeholder="Thema">`;
-        } else if (isAdmin && isHoliday) {
-            // Admin sees holiday but can't edit
-            // Optional: Add a hidden input or just rely on visual? 
-            // Better to visually indicate it's locked.
         }
 
         row.innerHTML = `
             <td>${dateObj.toLocaleDateString('de-DE')}</td>
             <td>${dayName}</td>
             <td>${presenterCell}</td>
-            <td>${countCell}</td>
+            <td>${combinedStatsCell}</td>
             <td>${forgottenCell}</td>
-            <td>${forgottenCountCell}</td>
             <td>${topicCell}</td>
             <td class="admin-col ${isAdmin ? '' : 'hidden'}"></td>
         `;
