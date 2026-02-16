@@ -3,7 +3,7 @@ name: Send Reminders
 
 on:
   schedule:
-    - cron: '0 8 * * 3' (Mittwochs)
+    - cron: '0 8 * * 3' # Mittwochs
   workflow_dispatch:
 
 jobs:
