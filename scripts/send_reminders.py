@@ -65,6 +65,8 @@ def main():
     # Assuming "name" is unique and matches "presenter" in schedule
     employee_map = {e['name']: e['email'] for e in employees if e.get('active')}
     
+    today = datetime.now().date()
+    
     # Calculate "Next Monday" to be robust against running day (Mon or Wed)
     # 0 = Mon, 1 = Tue, ... 6 = Sun
     # If today is Mon (0): 7 - 0 = 7 days -> Next Mon
