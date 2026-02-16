@@ -65,22 +65,27 @@ def main():
     employee_map = {e['name']: e['email'] for e in employees if e.get('active')}
     
     today = datetime.now().date()
-    target_date = today + timedelta(days=7) # Notification 7 days in advance
-    target_date_str = target_date.isoformat()
+    # Assuming script runs on Wednesday:
+    # Next Monday = today + 5
+    # Next Wednesday = today + 7
+    start_date = today + timedelta(days=5)
+    end_date = today + timedelta(days=7)
     
-    print(f"Checking for presentations on {target_date_str}...")
+    print(f"Checking for presentations between {start_date} and {end_date}...")
     
     count = 0
     for slot in schedule:
-        if slot['date'] == target_date_str:
+        slot_date = datetime.strptime(slot['date'], "%Y-%m-%d").date()
+        
+        if start_date <= slot_date <= end_date:
             presenter = slot.get('presenter')
             if presenter and presenter in employee_map:
                 email = employee_map[presenter]
-                print(f"Found slot for {presenter} ({email})")
+                print(f"Found slot for {presenter} on {slot['date']} ({email})")
                 send_email(email, presenter, slot['date'])
                 count += 1
             elif presenter:
-                print(f"Warning: No email found for presenter '{presenter}'")
+                print(f"Warning: No email found for presenter '{presenter}' on {slot['date']}")
     
     if count == 0:
         print("No reminders to send today.")
