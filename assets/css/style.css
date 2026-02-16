@@ -16,12 +16,14 @@ body {
 }
 
 /* Custom Tooltip */
+/* Custom Tooltip */
 .stats-tooltip {
     position: relative;
     cursor: help;
 }
 
-.stats-tooltip:hover::after {
+/* Base styles (hidden) */
+.stats-tooltip::after {
     content: "Gehalten / Vergessen";
     position: absolute;
     bottom: 100%;
@@ -38,9 +40,14 @@ body {
     z-index: 10;
     margin-bottom: 5px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    /* Hidden by default */
+    opacity: 0;
+    visibility: hidden;
+    /* Transition for hiding: instant or quick */
+    transition: opacity 0.1s ease-out, visibility 0s 0.1s;
 }
 
-.stats-tooltip:hover::before {
+.stats-tooltip::before {
     content: "";
     position: absolute;
     bottom: 100%;
@@ -51,7 +58,20 @@ body {
     border-color: #333 transparent transparent transparent;
     z-index: 10;
     margin-bottom: -5px;
-    /* Adjust based on arrow size */
+    /* Hidden by default */
+    opacity: 0;
+    visibility: hidden;
+    /* Transition for hiding */
+    transition: opacity 0.1s ease-out, visibility 0s 0.1s;
+}
+
+/* Hover state (visible with 0.25s delay) */
+.stats-tooltip:hover::after,
+.stats-tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
+    /* Delay 0.25s before showing */
+    transition: opacity 0.2s ease-in 0.25s, visibility 0s 0.25s;
 }
 
 header {
