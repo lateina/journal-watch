@@ -15,6 +15,45 @@ body {
     min-height: 100vh;
 }
 
+/* Custom Tooltip */
+.stats-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.stats-tooltip:hover::after {
+    content: "Gehalten / Vergessen";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 5px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: normal;
+    pointer-events: none;
+    z-index: 10;
+    margin-bottom: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.stats-tooltip:hover::before {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+    z-index: 10;
+    margin-bottom: -5px;
+    /* Adjust based on arrow size */
+}
+
 header {
     text-align: center;
     margin-bottom: 2rem;

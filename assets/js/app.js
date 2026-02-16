@@ -209,7 +209,7 @@ function renderSchedule() {
             <td>${dateObj.toLocaleDateString('de-DE')}</td>
             <td>${dayName}</td>
             <td>${presenterCell}</td>
-            <td class="center-text" title="Gehalten / Vergessen">${combinedStatsCell}</td>
+            <td class="center-text stats-tooltip">${combinedStatsCell}</td>
             <td class="center-text">${forgottenCell}</td>
             <td class="center-text">
                 <select class="swap-select" onchange="handleSwap(${index}, this.value)">
