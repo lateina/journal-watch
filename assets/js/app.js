@@ -155,8 +155,12 @@ function renderSchedule() {
 }
 
 function renderEmployees() {
+    const table = document.getElementById('employee-table');
     const tbody = document.getElementById('employee-body');
-    if (!tbody) return; // Should exist if tabs are rendered locally
+    if (!tbody || !table) return;
+
+    // Make table visible
+    table.classList.remove('hidden');
 
     tbody.innerHTML = '';
 
@@ -211,15 +215,9 @@ window.updateEmployee = function (index, field, value) {
 }
 
 window.addEmployee = function () {
-    console.log("addEmployee called");
     if (!currentEmployees) currentEmployees = [];
     currentEmployees.push({ name: "Neu", email: "@", active: true });
-
-    // Switch to tab if not already (just in case)
-    document.getElementById('tab-employees').classList.remove('hidden');
-
     renderEmployees();
-    alert("Neue Zeile hinzugefügt! (Ganz unten)");
 }
 
 window.deleteEmployee = function (index) {
