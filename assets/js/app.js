@@ -428,6 +428,94 @@ window.logout = function () {
     renderEmployees();
 }
 
+// --- Swap Logic ---
+window.handleSwap = function (sourceIndex, targetName) {
+    if (!targetName) return;
+
+    const sourceSlot = currentSchedule[sourceIndex];
+    const sourceName = sourceSlot.presenter; // Might be empty
+
+    // Find all future non-holiday slots assigned to targetName
+    // We check the whole schedule but maybe we should focus on future?
+    // Let's stick to future slots to avoid confusion with past swaps
+    // Actually, user might want to swap with a past date if correcting mistakes?
+    // Let's filter for all valid slots that are NOT holidays.
+    const targetIndices = currentSchedule.map((slot, idx) => ({ slot, idx }))
+        .filter(({ slot }) => slot.presenter === targetName && !checkHoliday(new Date(slot.date)))
+        .map(({ idx }) => idx);
+
+    if (targetIndices.length === 0) {
+        // Case 3: No target slots -> Replacement
+        if (confirm(`'${targetName}' hat keine eigenen Termine.\nSoll er/sie diesen Termin (${sourceSlot.date}) übernehmen?`)) {
+            sourceSlot.presenter = targetName;
+            // Clear stats/forgotten flags? Maybe keep them?
+            // If replacing, we should probably reset forgotten status if it was set for the previous person?
+            // Let's leave flags as is for now, or reset forgotten if new person takes over?
+            // If source was forgotten, and new person takes over, is it still forgotten? Probably not.
+            sourceSlot.forgotten = false;
+            saveSchedule();
+            renderSchedule();
+        } else {
+            renderSchedule(); // Reset dropdown
+        }
+    } else if (targetIndices.length === 1) {
+        // Case 1: Exactly one target slot -> Swap
+        const targetIndex = targetIndices[0];
+        const targetSlot = currentSchedule[targetIndex];
+        if (confirm(`Tausch bestätigen:\n\n${sourceName || "Leer"} (${sourceSlot.date})\n↔\n${targetName} (${targetSlot.date})`)) {
+            // Perform Swap
+            sourceSlot.presenter = targetName;
+            blockHoliday = checkHoliday(new Date(sourceSlot.date)); // Should be false if we are swapping
+
+            targetSlot.presenter = sourceName;
+            // Reset forgotten on both? Or swap them?
+            // Only reset if it makes sense. Let's just swap names.
+            saveSchedule();
+            renderSchedule();
+        } else {
+            renderSchedule(); // Reset dropdown
+        }
+    } else {
+        // Case 2: Multiple target slots -> Prompt
+        let promptText = `'${targetName}' hat mehrere Termine.\nWelchen möchten Sie tauschen?\n\n`;
+        // Limit to next 10 to avoid huge lists
+        const relevantIndices = targetIndices.slice(0, 10);
+
+        relevantIndices.forEach((tIdx, i) => {
+            const date = currentSchedule[tIdx].date;
+            const dateObj = new Date(date);
+            const dateStr = dateObj.toLocaleDateString('de-DE');
+            promptText += `${i + 1}: ${dateStr}\n`;
+        });
+        promptText += `\nBitte Nummer (1-${relevantIndices.length}) eingeben:`;
+
+        const input = prompt(promptText);
+
+        if (input === null) {
+            renderSchedule();
+            return;
+        }
+
+        const selection = parseInt(input);
+
+        if (!isNaN(selection) && selection >= 1 && selection <= relevantIndices.length) {
+            const targetIndex = relevantIndices[selection - 1];
+            const targetSlot = currentSchedule[targetIndex];
+            if (confirm(`Tausch durchführen?\n${sourceSlot.date} ↔ ${targetSlot.date}`)) {
+                sourceSlot.presenter = targetName;
+                targetSlot.presenter = sourceName;
+                saveSchedule();
+                renderSchedule();
+            } else {
+                renderSchedule();
+            }
+        } else {
+            alert("Ungültige Eingabe.");
+            renderSchedule();
+        }
+    }
+};
+
 window.saveSchedule = async function () {
     const btn = document.querySelector('.save-btn');
     const originalText = btn.textContent;
