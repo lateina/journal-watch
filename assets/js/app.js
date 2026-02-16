@@ -31,10 +31,11 @@ function setupEventListeners() {
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
     // Add Employee
-    const addEmpBtn = document.getElementById('add-employee-btn');
-    if (addEmpBtn) {
-        addEmpBtn.addEventListener('click', addEmployee);
-    }
+    // Handled via inline onclick in index.html to ensure reliability
+    // const addEmpBtn = document.getElementById('add-employee-btn');
+    // if (addEmpBtn) {
+    //    addEmpBtn.addEventListener('click', addEmployee);
+    // }
 }
 
 // --- Initialization ---
