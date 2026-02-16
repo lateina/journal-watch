@@ -127,6 +127,14 @@ function renderSchedule() {
 
     tbody.innerHTML = '';
 
+    // Calculate stats
+    const stats = {};
+    currentSchedule.forEach(s => {
+        if (s.presenter && s.presenter !== "" && !checkHoliday(new Date(s.date))) {
+            stats[s.presenter] = (stats[s.presenter] || 0) + 1;
+        }
+    });
+
     currentSchedule.forEach((slot, index) => {
         const row = document.createElement('tr');
         const dateObj = new Date(slot.date);
@@ -138,12 +146,17 @@ function renderSchedule() {
         let presenterCell = slot.presenter || '<span style="color:#ccc">Frei</span>';
         let topicCell = slot.topic || '';
         let isHoliday = false;
+        let countCell = "";
 
         if (holidayName) {
             isHoliday = true;
             row.classList.add('holiday-row');
             presenterCell = `<strong>${holidayName}</strong>`;
             topicCell = "Kein Journal Watch";
+            countCell = "-";
+        } else {
+            const count = (slot.presenter && stats[slot.presenter]) ? stats[slot.presenter] : 0;
+            countCell = count > 0 ? count : "-";
         }
 
         if (isAdmin && !isHoliday) {
@@ -174,6 +187,7 @@ function renderSchedule() {
             <td>${dateObj.toLocaleDateString('de-DE')}</td>
             <td>${dayName}</td>
             <td>${presenterCell}</td>
+            <td>${countCell}</td>
             <td>${topicCell}</td>
             <td class="admin-col ${isAdmin ? '' : 'hidden'}"></td>
         `;
@@ -281,6 +295,7 @@ function updateAdminUI() {
 
 window.updateSlot = function (index, field, value) {
     currentSchedule[index][field] = value;
+    if (field === 'presenter') renderSchedule(); // Re-calc stats immediately
 }
 
 window.updateEmployee = function (index, field, value) {
