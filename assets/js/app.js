@@ -218,7 +218,6 @@ function renderSchedule() {
                 </select>
             </td>
             <td>${topicCell}</td>
-            <td class="admin-col ${isAdmin ? '' : 'hidden'}"></td>
         `;
 
         if (slot.date < today && !isHoliday && !slot.forgotten) row.style.opacity = '0.5';
