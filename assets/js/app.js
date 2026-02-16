@@ -132,10 +132,21 @@ function renderSchedule() {
         const dateObj = new Date(slot.date);
         const dayName = dateObj.toLocaleDateString('de-DE', { weekday: 'long' });
 
+        // Check for Holiday / Vacation
+        const holidayName = checkHoliday(dateObj);
+
         let presenterCell = slot.presenter || '<span style="color:#ccc">Frei</span>';
         let topicCell = slot.topic || '';
+        let isHoliday = false;
 
-        if (isAdmin) {
+        if (holidayName) {
+            isHoliday = true;
+            row.classList.add('holiday-row');
+            presenterCell = `<strong>${holidayName}</strong>`;
+            topicCell = "Kein Journal Watch";
+        }
+
+        if (isAdmin && !isHoliday) {
             // Build Dropdown
             let options = `<option value="">-- Wähle Referent --</option>`;
             if (currentEmployees && Array.isArray(currentEmployees)) {
@@ -153,6 +164,10 @@ function renderSchedule() {
 
             presenterCell = `<select class="edit-field" onchange="updateSlot(${index}, 'presenter', this.value)">${options}</select>`;
             topicCell = `<input class="edit-field" value="${slot.topic || ''}" onchange="updateSlot(${index}, 'topic', this.value)" placeholder="Thema">`;
+        } else if (isAdmin && isHoliday) {
+            // Admin sees holiday but can't edit
+            // Optional: Add a hidden input or just rely on visual? 
+            // Better to visually indicate it's locked.
         }
 
         row.innerHTML = `
@@ -163,11 +178,53 @@ function renderSchedule() {
             <td class="admin-col ${isAdmin ? '' : 'hidden'}"></td>
         `;
 
-        if (slot.date < today) row.style.opacity = '0.5';
+        if (slot.date < today && !isHoliday) row.style.opacity = '0.5';
         tbody.appendChild(row);
     });
 
     updateAdminUI();
+}
+
+// --- Helper: Holidays 2026 (Bavaria) ---
+function checkHoliday(dateObj) {
+    const year = dateObj.getFullYear();
+    if (year !== 2026) return null; // Logic focused on 2026 for now as requested
+
+    const month = dateObj.getMonth() + 1; // 1-12
+    const day = dateObj.getDate();
+    const dateStr = `${day.toString().padStart(2, '0')}.${month.toString().padStart(2, '0')}.`;
+
+    // Fixed Holidays 2026
+    const holidays = {
+        "01.01.": "Neujahr",
+        "06.01.": "Heilige Drei Könige",
+        "03.04.": "Karfreitag",
+        "06.04.": "Ostermontag",
+        "01.05.": "Tag der Arbeit",
+        "14.05.": "Christi Himmelfahrt",
+        "25.05.": "Pfingstmontag",
+        "04.06.": "Fronleichnam",
+        "15.08.": "Mariä Himmelfahrt",
+        "03.10.": "Tag der Deutschen Einheit",
+        "01.11.": "Allerheiligen",
+        "25.12.": "1. Weihnachtsfeiertag",
+        "26.12.": "2. Weihnachtsfeiertag"
+    };
+
+    if (holidays[dateStr]) return holidays[dateStr];
+
+    // Summer Holidays 2026: Aug 3 - Sep 14
+    // Month is 0-indexed in JS Date, but I used 1-based above.
+    // Let's use numeric comparison for ranges.
+    const time = dateObj.getTime();
+    const summerStart = new Date('2026-08-03').getTime();
+    const summerEnd = new Date('2026-09-14').getTime();
+
+    if (time >= summerStart && time <= summerEnd) {
+        return "Sommerferien";
+    }
+
+    return null;
 }
 
 function renderEmployees() {
