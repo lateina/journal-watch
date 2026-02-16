@@ -129,10 +129,16 @@ function renderSchedule() {
 
     // Calculate stats
     const stats = {};
+    const forgottenStats = {};
+
     currentSchedule.forEach(s => {
-        // Only count if assigned AND NOT forgotten AND NOT holiday
-        if (s.presenter && s.presenter !== "" && !s.forgotten && !checkHoliday(new Date(s.date))) {
-            stats[s.presenter] = (stats[s.presenter] || 0) + 1;
+        // Only count frequency if assigned AND NOT forgotten AND NOT holiday
+        if (s.presenter && s.presenter !== "" && !checkHoliday(new Date(s.date))) {
+            if (!s.forgotten) {
+                stats[s.presenter] = (stats[s.presenter] || 0) + 1;
+            } else {
+                forgottenStats[s.presenter] = (forgottenStats[s.presenter] || 0) + 1;
+            }
         }
     });
 
@@ -149,6 +155,7 @@ function renderSchedule() {
         let isHoliday = false;
         let countCell = "";
         let forgottenCell = "";
+        let forgottenCountCell = "";
 
         if (holidayName) {
             isHoliday = true;
@@ -157,6 +164,7 @@ function renderSchedule() {
             topicCell = "Kein Journal Watch";
             countCell = "-";
             forgottenCell = "-";
+            forgottenCountCell = "-";
         } else {
             const count = (slot.presenter && stats[slot.presenter]) ? stats[slot.presenter] : 0;
             countCell = count > 0 ? count : "-";
@@ -168,6 +176,10 @@ function renderSchedule() {
             } else {
                 forgottenCell = slot.forgotten ? "Ja" : "";
             }
+
+            // Forgotten Count
+            const fCount = (slot.presenter && forgottenStats[slot.presenter]) ? forgottenStats[slot.presenter] : 0;
+            forgottenCountCell = fCount > 0 ? `<span style="color:red; font-weight:bold;">${fCount}</span>` : "-";
 
             if (slot.forgotten) row.classList.add('forgotten-row');
         }
@@ -202,6 +214,7 @@ function renderSchedule() {
             <td>${presenterCell}</td>
             <td>${countCell}</td>
             <td>${forgottenCell}</td>
+            <td>${forgottenCountCell}</td>
             <td>${topicCell}</td>
             <td class="admin-col ${isAdmin ? '' : 'hidden'}"></td>
         `;
