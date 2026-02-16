@@ -33,11 +33,7 @@ function setupEventListeners() {
     // Add Employee
     const addEmpBtn = document.getElementById('add-employee-btn');
     if (addEmpBtn) {
-        addEmpBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            console.log("Add Employee Clicked via Event Listener");
-            addEmployee();
-        });
+        addEmpBtn.addEventListener('click', addEmployee);
     }
 }
 
@@ -215,9 +211,15 @@ window.updateEmployee = function (index, field, value) {
 }
 
 window.addEmployee = function () {
+    console.log("addEmployee called");
     if (!currentEmployees) currentEmployees = [];
     currentEmployees.push({ name: "Neu", email: "@", active: true });
+
+    // Switch to tab if not already (just in case)
+    document.getElementById('tab-employees').classList.remove('hidden');
+
     renderEmployees();
+    alert("Neue Zeile hinzugefügt! (Ganz unten)");
 }
 
 window.deleteEmployee = function (index) {

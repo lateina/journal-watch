@@ -168,7 +168,7 @@
                         <!-- Rows will be inserted here -->
                     </tbody>
                 </table>
-                <button id="add-employee-btn" class="hidden">+ Neuer Mitarbeiter</button>
+                <button id="add-employee-btn" class="hidden" onclick="addEmployee()">+ Neuer Mitarbeiter</button>
             </div>
         </main>
 
@@ -184,6 +184,13 @@
             </div>
         </footer>
     </div>
+
+    <script>
+        window.onerror = function (msg, url, line) {
+            alert("Fehler: " + msg + "\nZeile: " + line);
+            return false;
+        };
+    </script>
 
     <!-- Login Modal -->
     <div id="login-modal" class="hidden">
