@@ -91,6 +91,7 @@ async function loadEmployees() {
             currentEmployees = [];
         }
         renderEmployees();
+        renderSchedule(); // Re-render schedule to populate dropdowns
     } catch (e) {
         console.warn("Fehler beim Laden der Mitarbeiter:", e);
         currentEmployees = []; // Fallback
@@ -135,7 +136,22 @@ function renderSchedule() {
         let topicCell = slot.topic || '';
 
         if (isAdmin) {
-            presenterCell = `<input class="edit-field" value="${slot.presenter || ''}" onchange="updateSlot(${index}, 'presenter', this.value)" placeholder="Name">`;
+            // Build Dropdown
+            let options = `<option value="">-- Wähle Referent --</option>`;
+            if (currentEmployees && Array.isArray(currentEmployees)) {
+                currentEmployees.forEach(emp => {
+                    if (emp.active) {
+                        const selected = (slot.presenter === emp.name) ? 'selected' : '';
+                        options += `<option value="${emp.name}" ${selected}>${emp.name}</option>`;
+                    }
+                });
+            }
+            // Keep current value if not in list (legacy support)
+            if (slot.presenter && (!currentEmployees || !currentEmployees.find(e => e.name === slot.presenter && e.active))) {
+                options += `<option value="${slot.presenter}" selected>${slot.presenter} (Archiv)</option>`;
+            }
+
+            presenterCell = `<select class="edit-field" onchange="updateSlot(${index}, 'presenter', this.value)">${options}</select>`;
             topicCell = `<input class="edit-field" value="${slot.topic || ''}" onchange="updateSlot(${index}, 'topic', this.value)" placeholder="Thema">`;
         }
 
