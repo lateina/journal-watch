@@ -65,14 +65,18 @@ def main():
     # Assuming "name" is unique and matches "presenter" in schedule
     employee_map = {e['name']: e['email'] for e in employees if e.get('active')}
     
-    today = datetime.now().date()
-    # Assuming script runs on Wednesday:
-    # Next Monday = today + 5
-    # Next Wednesday = today + 7
-    start_date = today + timedelta(days=5)
-    end_date = today + timedelta(days=7)
+    # Calculate "Next Monday" to be robust against running day (Mon or Wed)
+    # 0 = Mon, 1 = Tue, ... 6 = Sun
+    # If today is Mon (0): 7 - 0 = 7 days -> Next Mon
+    # If today is Wed (2): 7 - 2 = 5 days -> Next Mon
+    # If today is Sun (6): 7 - 6 = 1 day -> Next Mon (which is tomorrow)
+    days_until_next_monday = 7 - today.weekday()
+    start_date = today + timedelta(days=days_until_next_monday)
     
-    print(f"Checking for presentations between {start_date} and {end_date}...")
+    # Check the whole work week (Monday to Friday)
+    end_date = start_date + timedelta(days=4)
+    
+    print(f"Checking for presentations next week: {start_date} to {end_date}...")
     
     count = 0
     for slot in schedule:
