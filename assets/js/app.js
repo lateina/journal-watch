@@ -10,6 +10,13 @@ let isAdmin = false;
 // --- Initialization ---
 
 async function init() {
+    // Check local storage for session
+    if (localStorage.getItem('journal_admin_session') === 'true') {
+        isAdmin = true;
+        document.getElementById('login-btn').classList.add('hidden');
+        document.getElementById('admin-panel').classList.remove('hidden');
+    }
+
     await loadSchedule();
     await loadEmployees();
     setupTabs();
@@ -190,6 +197,7 @@ window.checkLogin = function () {
     const input = document.getElementById('password-input').value;
     if (input === ADMIN_PASS) {
         isAdmin = true;
+        localStorage.setItem('journal_admin_session', 'true'); // Persist
         document.getElementById('login-btn').classList.add('hidden');
         const adminPanel = document.getElementById('admin-panel');
         if (adminPanel) adminPanel.classList.remove('hidden');
@@ -204,6 +212,7 @@ window.checkLogin = function () {
 
 window.logout = function () {
     isAdmin = false;
+    localStorage.removeItem('journal_admin_session'); // Clear
     document.getElementById('login-btn').classList.remove('hidden');
     document.getElementById('admin-panel').classList.add('hidden');
     renderSchedule();
