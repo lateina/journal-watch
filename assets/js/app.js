@@ -12,13 +12,14 @@ async function loadSchedule() {
         // If Bin is private, we need X-Master-Key or X-Access-Key headers
         const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
             headers: {
-                // "X-Master-Key": API_KEY, // Uncomment if using private bin with Master Key (Warning: Exposed in frontend source!)
-                "X-Access-Key": API_KEY // Better to use a specific read-only access key
+                "X-Master-Key": API_KEY // Using the key provided by the user as Master Key
             }
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to load data: ${response.status}`);
+            const errorText = await response.text();
+            console.error("JSONBin Error Context:", errorText);
+            throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
