@@ -254,7 +254,35 @@ function checkHoliday(dateObj) {
 
     return null;
 }
+window.toggleForgotten = function (index, isChecked) {
+    const slot = currentSchedule[index];
+    slot.forgotten = isChecked;
 
+    if (isChecked) {
+        // Find next free slot
+        const oldDate = new Date(slot.date).toLocaleDateString('de-DE');
+        const presenter = slot.presenter;
+        let found = false;
+
+        for (let i = index + 1; i < currentSchedule.length; i++) {
+            const potential = currentSchedule[i];
+            // Must be empty AND not a holiday
+            if ((!potential.presenter || potential.presenter === "") && !checkHoliday(new Date(potential.date))) {
+                potential.presenter = presenter;
+                potential.topic = `Nachholtermin für ${oldDate}`;
+                found = true;
+                alert(`${presenter} wurde automatisch auf den ${new Date(potential.date).toLocaleDateString('de-DE')} verschoben.`);
+                break;
+            }
+        }
+
+        if (!found) {
+            alert("Warnung: Kein freier Termin für die Verschiebung gefunden!");
+        }
+    }
+
+    renderSchedule();
+}
 function renderEmployees() {
     const table = document.getElementById('employee-table');
     const tbody = document.getElementById('employee-body');
