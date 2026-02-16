@@ -15,7 +15,7 @@ EMAIL_PASS = os.environ.get("EMAIL_HOST_PASSWORD")
 
 def fetch_json(bin_id):
     url = f"https://api.jsonbin.io/v3/b/{bin_id}/latest"
-    headers = {"X-Access-Key": API_KEY} # Or X-Master-Key
+    headers = {"X-Master-Key": API_KEY}
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json()['record']
