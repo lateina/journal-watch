@@ -45,7 +45,8 @@ th {
     font-weight: 600;
 }
 
-th[title] {
+th[title],
+td[title] {
     cursor: help;
 }
 
