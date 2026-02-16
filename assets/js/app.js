@@ -209,8 +209,8 @@ function renderSchedule() {
             <td>${dateObj.toLocaleDateString('de-DE')}</td>
             <td>${dayName}</td>
             <td>${presenterCell}</td>
-            <td>${combinedStatsCell}</td>
-            <td>${forgottenCell}</td>
+            <td class="center-text">${combinedStatsCell}</td>
+            <td class="center-text">${forgottenCell}</td>
             <td>${topicCell}</td>
             <td class="admin-col ${isAdmin ? '' : 'hidden'}"></td>
         `;

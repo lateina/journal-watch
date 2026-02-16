@@ -81,3 +81,12 @@ tr:hover {
     color: #e74c3c;
     background-color: #fadbd8;
 }
+
+.col-narrow {
+    width: 80px;
+    white-space: nowrap;
+}
+
+.center-text {
+    text-align: center;
+}
