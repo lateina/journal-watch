@@ -36,6 +36,17 @@
             margin-top: 1rem;
         }
 
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+
         input.edit-field {
             width: 100%;
             padding: 5px;
@@ -63,6 +74,44 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #666;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: #3498db;
+            border-bottom: 2px solid #3498db;
+            font-weight: 600;
+        }
+
+        .tab-content.hidden {
+            display: none;
+        }
+
+        #add-employee-btn {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -73,24 +122,50 @@
             <p>Kommende Präsentationen</p>
         </header>
 
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('schedule')">Terminplan</button>
+            <button class="tab-btn" onclick="switchTab('employees')">Mitarbeiter</button>
+        </div>
+
         <main>
-            <div id="loading">Lade Termine...</div>
+            <div id="loading">Lade Daten...</div>
             <div id="error-message" class="hidden"></div>
 
-            <table id="schedule-table" class="hidden">
-                <thead>
-                    <tr>
-                        <th>Datum</th>
-                        <th>Tag</th>
-                        <th>Referent</th>
-                        <th>Thema (Optional)</th>
-                        <th class="admin-col hidden">Aktion</th>
-                    </tr>
-                </thead>
-                <tbody id="schedule-body">
-                    <!-- Rows will be inserted here -->
-                </tbody>
-            </table>
+            <!-- Schedule Tab -->
+            <div id="tab-schedule" class="tab-content">
+                <table id="schedule-table" class="hidden">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Tag</th>
+                            <th>Referent</th>
+                            <th>Thema (Optional)</th>
+                            <th class="admin-col hidden">Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedule-body">
+                        <!-- Rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Employee Tab -->
+            <div id="tab-employees" class="tab-content hidden">
+                <table id="employee-table" class="hidden">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Aktiv</th>
+                            <th class="admin-col hidden">Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employee-body">
+                        <!-- Rows will be inserted here -->
+                    </tbody>
+                </table>
+                <button id="add-employee-btn" class="hidden" onclick="addEmployee()">+ Neuer Mitarbeiter</button>
+            </div>
         </main>
 
         <footer>

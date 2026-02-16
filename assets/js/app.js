@@ -1,50 +1,68 @@
-const BIN_ID = "699332e2ae596e708f2f7434"; // Schedule Bin ID
+const SCHEDULE_BIN_ID = "699332e2ae596e708f2f7434"; // Schedule
+const EMPLOYEES_BIN_ID = "699333dcd0ea881f40bf132f"; // Employees
 const API_KEY = "$2a$10$5f5WR8jrQAQp2TgNWGvWb.2tp/RA1ZzQzMv3SY5uwYnm5oqz66yxa"; // Master Key
-const ADMIN_PASS = "journal2026"; // Simple shared password
+const ADMIN_PASS = "journal2026";
 
-let currentSchedule = []; // Store data locally for editing
+let currentSchedule = [];
+let currentEmployees = [];
 let isAdmin = false;
 
+// --- Initialization ---
+
+async function init() {
+    await loadSchedule();
+    await loadEmployees();
+    setupTabs();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
+// --- Data Loading ---
+
+async function fetchData(binId) {
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+        headers: { "X-Master-Key": API_KEY }
+    });
+    if (!response.ok) throw new Error(`Fehler: ${response.status}`);
+    const data = await response.json();
+    return data.record;
+}
+
 async function loadSchedule() {
-    constloading = document.getElementById('loading');
-    const tbody = document.getElementById('schedule-body');
-    const table = document.getElementById('schedule-table');
-    const errorDiv = document.getElementById('error-message');
-
     try {
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-            headers: {
-                "X-Master-Key": API_KEY
-            }
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("JSONBin Error Context:", errorText);
-            throw new Error(`Fehler beim Laden: ${response.status}`);
-        }
-
-        const data = await response.json();
-        currentSchedule = data.record; // Keep global reference
-        renderTable();
-
-        loading.classList.add('hidden');
-        table.classList.remove('hidden');
-
-    } catch (error) {
-        console.error(error);
-        loading.classList.add('hidden');
-        errorDiv.textContent = 'Fehler beim Laden des Plans. Bitte später erneut versuchen.';
-        errorDiv.classList.remove('hidden');
+        currentSchedule = await fetchData(SCHEDULE_BIN_ID);
+        renderSchedule();
+    } catch (e) {
+        showError("Fehler beim Laden des Plans: " + e.message);
     }
 }
 
-function renderTable() {
-    const tbody = document.getElementById('schedule-body');
-    const today = new Date().toISOString().split('T')[0];
+async function loadEmployees() {
+    try {
+        currentEmployees = await fetchData(EMPLOYEES_BIN_ID);
+        renderEmployees();
+    } catch (e) {
+        console.warn("Fehler beim Laden der Mitarbeiter:", e);
+    }
+}
 
-    // Sort logic
+function showError(msg) {
+    const errorDiv = document.getElementById('error-message');
+    errorDiv.textContent = msg;
+    errorDiv.classList.remove('hidden');
+    document.getElementById('loading').classList.add('hidden');
+}
+
+// --- Rendering ---
+
+function renderSchedule() {
+    const tbody = document.getElementById('schedule-body');
+    const table = document.getElementById('schedule-table');
+    document.getElementById('loading').classList.add('hidden');
+    table.classList.remove('hidden');
+
     currentSchedule.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const today = new Date().toISOString().split('T')[0];
 
     tbody.innerHTML = '';
 
@@ -55,12 +73,10 @@ function renderTable() {
 
         let presenterCell = slot.presenter || '<span style="color:#ccc">Frei</span>';
         let topicCell = slot.topic || '';
-        let adminCell = '';
 
         if (isAdmin) {
-            presenterCell = `<input class="edit-field" value="${slot.presenter || ''}" onchange="updateSlot(${index}, 'presenter', this.value)" placeholder="Name">`;
-            topicCell = `<input class="edit-field" value="${slot.topic || ''}" onchange="updateSlot(${index}, 'topic', this.value)" placeholder="Thema">`;
-            // future enhancements specifically for admin cols can go here
+            presenterCell = `<input class="edit-field" value="${slot.presenter || ''}" onchange="updateSchedule(${index}, 'presenter', this.value)" placeholder="Name">`;
+            topicCell = `<input class="edit-field" value="${slot.topic || ''}" onchange="updateSchedule(${index}, 'topic', this.value)" placeholder="Thema">`;
         }
 
         row.innerHTML = `
@@ -68,83 +84,142 @@ function renderTable() {
             <td>${dayName}</td>
             <td>${presenterCell}</td>
             <td>${topicCell}</td>
-            <td class="admin-col ${isAdmin ? '' : 'hidden'}">
-                <!-- Actions like clear could go here -->
-            </td>
+            <td class="admin-col ${isAdmin ? '' : 'hidden'}"></td>
         `;
 
-        if (slot.date < today) {
-            row.style.opacity = '0.5';
-        }
-
+        if (slot.date < today) row.style.opacity = '0.5';
         tbody.appendChild(row);
     });
 
-    // Toggle Admin Column Header
-    const adminHeader = document.querySelector('.admin-col');
-    if (adminHeader) {
-        if (isAdmin) adminHeader.classList.remove('hidden');
-        else adminHeader.classList.add('hidden');
+    updateAdminUI();
+}
+
+function renderEmployees() {
+    const tbody = document.getElementById('employee-body');
+    if (!tbody) return; // Should exist if tabs are rendered locally
+
+    tbody.innerHTML = '';
+
+    currentEmployees.forEach((emp, index) => {
+        const row = document.createElement('tr');
+
+        let nameCell = emp.name;
+        let emailCell = emp.email;
+        let activeCell = emp.active ? "Ja" : "Nein";
+        let actionCell = "";
+
+        if (isAdmin) {
+            nameCell = `<input class="edit-field" value="${emp.name || ''}" onchange="updateEmployee(${index}, 'name', this.value)">`;
+            emailCell = `<input class="edit-field" value="${emp.email || ''}" onchange="updateEmployee(${index}, 'email', this.value)">`;
+            activeCell = `<input type="checkbox" ${emp.active ? 'checked' : ''} onchange="updateEmployee(${index}, 'active', this.checked)">`;
+            actionCell = `<button class="delete-btn" onclick="deleteEmployee(${index})">Löschen</button>`;
+        }
+
+        row.innerHTML = `
+            <td>${nameCell}</td>
+            <td>${emailCell}</td>
+            <td>${activeCell}</td>
+            <td class="admin-col ${isAdmin ? '' : 'hidden'}">${actionCell}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    updateAdminUI();
+}
+
+function updateAdminUI() {
+    document.querySelectorAll('.admin-col').forEach(el => {
+        if (isAdmin) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+    });
+
+    const addBtn = document.getElementById('add-employee-btn');
+    if (addBtn) {
+        if (isAdmin) addBtn.classList.remove('hidden');
+        else addBtn.classList.add('hidden');
     }
 }
 
-function updateSlot(index, field, value) {
+// --- Updates (Memory) ---
+
+function updateSchedule(index, field, value) {
     currentSchedule[index][field] = value;
 }
 
-// --- Admin Functions ---
-
-function showLogin() {
-    document.getElementById('login-modal').classList.remove('hidden');
+function updateEmployee(index, field, value) {
+    currentEmployees[index][field] = value;
 }
 
-function hideLogin() {
+function addEmployee() {
+    currentEmployees.push({ name: "Neu", email: "@", active: true });
+    renderEmployees();
+}
+
+function deleteEmployee(index) {
+    if (confirm("Mitarbeiter wirklich löschen?")) {
+        currentEmployees.splice(index, 1);
+        renderEmployees();
+    }
+}
+
+// --- Tabs ---
+
+function setupTabs() {
+    window.switchTab = function (tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+        const activeBtn = document.querySelector(`button[onclick="switchTab('${tabName}')"]`);
+        if (activeBtn) activeBtn.classList.add('active');
+
+        const activeContent = document.getElementById(`tab-${tabName}`);
+        if (activeContent) activeContent.classList.remove('hidden');
+    };
+}
+
+// --- Auth & Persistence ---
+
+window.showLogin = function () { document.getElementById('login-modal').classList.remove('hidden'); }
+window.hideLogin = function () {
     document.getElementById('login-modal').classList.add('hidden');
     document.getElementById('login-error').style.display = 'none';
     document.getElementById('password-input').value = '';
 }
 
-function checkLogin() {
+window.checkLogin = function () {
     const input = document.getElementById('password-input').value;
     if (input === ADMIN_PASS) {
         isAdmin = true;
         document.getElementById('login-btn').classList.add('hidden');
-        document.getElementById('admin-panel').classList.remove('hidden');
+        const adminPanel = document.getElementById('admin-panel');
+        if (adminPanel) adminPanel.classList.remove('hidden');
         hideLogin();
-        renderTable(); // Re-render with edit fields
+        renderSchedule();
+        renderEmployees();
     } else {
-        document.getElementById('login-error').style.display = 'block';
+        const err = document.getElementById('login-error');
+        if (err) err.style.display = 'block';
     }
 }
 
-function logout() {
+window.logout = function () {
     isAdmin = false;
     document.getElementById('login-btn').classList.remove('hidden');
     document.getElementById('admin-panel').classList.add('hidden');
-    renderTable();
+    renderSchedule();
+    renderEmployees();
 }
 
-async function saveSchedule() {
+window.saveSchedule = async function () {
     const btn = document.querySelector('.save-btn');
     const originalText = btn.textContent;
     btn.textContent = "Speichere...";
     btn.disabled = true;
 
     try {
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-            method: 'PUT',
-            headers: {
-                "Content-Type": "application/json",
-                "X-Master-Key": API_KEY
-            },
-            body: JSON.stringify(currentSchedule)
-        });
-
-        if (!response.ok) {
-            throw new Error("Speichern fehlgeschlagen");
-        }
-
-        alert("Plan erfolgreich gespeichert!");
+        await saveData(SCHEDULE_BIN_ID, currentSchedule);
+        await saveData(EMPLOYEES_BIN_ID, currentEmployees);
+        alert("Alle Änderungen gespeichert!");
     } catch (e) {
         alert("Fehler beim Speichern: " + e.message);
     } finally {
@@ -153,4 +228,14 @@ async function saveSchedule() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', loadSchedule);
+async function saveData(binId, data) {
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+        method: 'PUT',
+        headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": API_KEY
+        },
+        body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error("Update fehlgeschlagen für Bin " + binId);
+}
