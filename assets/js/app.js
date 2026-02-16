@@ -104,9 +104,17 @@ async function loadEmployees() {
 
 function showError(msg) {
     const errorDiv = document.getElementById('error-message');
-    errorDiv.textContent = msg;
-    errorDiv.classList.remove('hidden');
-    document.getElementById('loading').classList.add('hidden');
+    const loadingDiv = document.getElementById('loading');
+
+    if (errorDiv) {
+        errorDiv.textContent = msg;
+        errorDiv.classList.remove('hidden');
+    } else {
+        console.error("Error (UI missing):", msg);
+        alert(msg);
+    }
+
+    if (loadingDiv) loadingDiv.classList.add('hidden');
 }
 
 // --- Rendering ---
