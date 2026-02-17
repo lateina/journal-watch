@@ -306,6 +306,25 @@ function renderEmployees() {
     // Make table visible
     table.classList.remove('hidden');
 
+    // Sort employees alphabetically by last name before rendering
+    currentEmployees.sort((a, b) => {
+        const nameA = a.name.trim();
+        const nameB = b.name.trim();
+
+        // Extract last name (last word)
+        const partsA = nameA.split(' ');
+        const lastNameA = partsA[partsA.length - 1].toLowerCase();
+
+        const partsB = nameB.split(' ');
+        const lastNameB = partsB[partsB.length - 1].toLowerCase();
+
+        if (lastNameA < lastNameB) return -1;
+        if (lastNameA > lastNameB) return 1;
+
+        // If last names match, fallback to full name
+        return nameA.localeCompare(nameB);
+    });
+
     tbody.innerHTML = '';
 
     currentEmployees.forEach((emp, index) => {
