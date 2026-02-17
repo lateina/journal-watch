@@ -244,11 +244,32 @@ function renderSchedule() {
             <td class="center-text stats-tooltip">${combinedStatsCell}</td>
             <td class="center-text">${forgottenCell}</td>
             <td class="center-text">
-                ${isAdmin ? `
-                <select class="swap-select" onchange="handleSwap(${index}, this.value)">
-                    <option value="">Tauschen...</option>
-                    ${[...currentEmployees].filter(e => e.active && e.name !== slot.presenter).sort(sortEmployeesByName).map(e => `<option value="${e.name}">${e.name}</option>`).join('')}
-                </select>` : '-'}
+                ${isAdmin ? (() => {
+                // Determine Role for Swap Filter
+                let isOberarztSlot = false;
+                const day = dateObj.getDay();
+
+                if (slot.presenter && slot.presenter !== "") {
+                    // If assigned, use the assigned person's role
+                    const assignedEmp = currentEmployees.find(e => e.name === slot.presenter);
+                    if (assignedEmp) isOberarztSlot = !!assignedEmp.isOberarzt;
+                } else {
+                    // If empty, use day rule
+                    if (day === 3) isOberarztSlot = true; // Wednesday = OA
+                    // else Monday = AA (false)
+                }
+
+                const swapOptions = [...currentEmployees]
+                    .filter(e => e.active && e.name !== slot.presenter && !!e.isOberarzt === isOberarztSlot)
+                    .sort(sortEmployeesByName)
+                    .map(e => `<option value="${e.name}">${e.name}</option>`)
+                    .join('');
+
+                return `<select class="swap-select" onchange="handleSwap(${index}, this.value)">
+                        <option value="">Tauschen...</option>
+                        ${swapOptions}
+                    </select>`;
+            })() : '-'}
             </td>
             <td>${topicCell}</td>
         `;
@@ -321,20 +342,34 @@ window.toggleForgotten = function (index, isChecked) {
         const presenter = slot.presenter;
         let found = false;
 
+        // Determine target day based on role
+        let targetDay = 1; // Default: Monday (Assistenzarzt)
+        if (currentEmployees) {
+            const emp = currentEmployees.find(e => e.name === presenter);
+            if (emp && emp.isOberarzt) {
+                targetDay = 3; // Wednesday (Oberarzt)
+            }
+        }
+
         for (let i = index + 1; i < currentSchedule.length; i++) {
             const potential = currentSchedule[i];
-            // Must be empty AND not a holiday
-            if ((!potential.presenter || potential.presenter === "") && !checkHoliday(new Date(potential.date))) {
+            const pDate = new Date(potential.date);
+
+            // Must be empty, not a holiday, AND match the target day
+            if ((!potential.presenter || potential.presenter === "") &&
+                !checkHoliday(pDate) &&
+                pDate.getDay() === targetDay) {
+
                 potential.presenter = presenter;
                 potential.topic = `Nachholtermin für ${oldDate}`;
                 found = true;
-                alert(`${presenter} wurde automatisch auf den ${new Date(potential.date).toLocaleDateString('de-DE')} verschoben.`);
+                alert(`${presenter} wurde automatisch auf den ${pDate.toLocaleDateString('de-DE')} verschoben.`);
                 break;
             }
         }
 
         if (!found) {
-            alert("Warnung: Kein freier Termin für die Verschiebung gefunden!");
+            alert(`Warnung: Kein freier ${targetDay === 3 ? "Mittwoch" : "Montag"} für die Verschiebung gefunden!`);
         }
     }
 
