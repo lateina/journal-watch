@@ -1,7 +1,6 @@
 const SCHEDULE_BIN_ID = "699332e2ae596e708f2f7434"; // Schedule
 const EMPLOYEES_BIN_ID = "699333dcd0ea881f40bf132f"; // Employees
 const API_KEY = "$2a$10$5f5WR8jrQAQp2TgNWGvWb.2tp/RA1ZzQzMv3SY5uwYnm5oqz66yxa"; // Master Key
-const API_KEY = "$2a$10$5f5WR8jrQAQp2TgNWGvWb.2tp/RA1ZzQzMv3SY5uwYnm5oqz66yxa"; // Master Key
 
 let currentSchedule = [];
 let currentEmployees = [];
