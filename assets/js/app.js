@@ -1,7 +1,7 @@
 const SCHEDULE_BIN_ID = "699332e2ae596e708f2f7434"; // Schedule
 const EMPLOYEES_BIN_ID = "699333dcd0ea881f40bf132f"; // Employees
 const API_KEY = "$2a$10$5f5WR8jrQAQp2TgNWGvWb.2tp/RA1ZzQzMv3SY5uwYnm5oqz66yxa"; // Master Key
-const ADMIN_PASS = "journal2026";
+const API_KEY = "$2a$10$5f5WR8jrQAQp2TgNWGvWb.2tp/RA1ZzQzMv3SY5uwYnm5oqz66yxa"; // Master Key
 
 let currentSchedule = [];
 let currentEmployees = [];
@@ -492,9 +492,21 @@ window.hideLogin = function () {
     document.getElementById('password-input').value = '';
 }
 
-window.checkLogin = function () {
+const ADMIN_HASH = "c773213c741cf9f3a0fa57ceaa90a4aa6d1ba4e6872133abea9ef0bf7d45bec9"; // SHA-256 of journal2026
+
+async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+}
+
+window.checkLogin = async function () {
     const input = document.getElementById('password-input').value;
-    if (input === ADMIN_PASS) {
+    const inputHash = await sha256(input);
+
+    if (inputHash === ADMIN_HASH) {
         isAdmin = true;
         localStorage.setItem('journal_admin_session', 'true'); // Persist
         document.getElementById('login-btn').classList.add('hidden');
@@ -503,6 +515,9 @@ window.checkLogin = function () {
         hideLogin();
         renderSchedule();
         renderEmployees();
+
+        // Ensure bulk import & swap dropdowns are updated
+        updateAdminUI();
     } else {
         const err = document.getElementById('login-error');
         if (err) err.style.display = 'block';
