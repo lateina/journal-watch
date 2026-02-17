@@ -165,6 +165,17 @@
 
             <!-- Employee Tab -->
             <div id="tab-employees" class="tab-content hidden">
+                <div id="bulk-import-section" class="hidden"
+                    style="margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 20px;">
+                    <h4>Massenimport</h4>
+                    <p style="font-size: 0.9em; color: #666;">Füge hier eine Liste von Namen und E-Mails ein (eine
+                        Person pro Zeile).<br>Wenn nur die E-Mail angegeben wird (z.B. vorname.nachname@ukr.de), wird
+                        der Name automatisch generiert.</p>
+                    <textarea id="bulk-import-text" rows="5" style="width: 100%; padding: 5px; margin-bottom: 10px;"
+                        placeholder="Max Mustermann max@beispiel.de&#10;vorname.nachname@ukr.de"></textarea>
+                    <button onclick="parseEmployeeInput()"
+                        style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Importieren</button>
+                </div>
                 <table id="employee-table" class="hidden">
                     <thead>
                         <tr>
@@ -178,17 +189,7 @@
                         <!-- Rows will be inserted here -->
                     </tbody>
                 </table>
-                <div id="bulk-import-section" class="hidden"
-                    style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 10px;">
-                    <h4>Massenimport</h4>
-                    <p style="font-size: 0.9em; color: #666;">Füge hier eine Liste von Namen und E-Mails ein (eine
-                        Person pro Zeile).<br>Wenn nur die E-Mail angegeben wird (z.B. vorname.nachname@ukr.de), wird
-                        der Name automatisch generiert.</p>
-                    <textarea id="bulk-import-text" rows="5" style="width: 100%; padding: 5px; margin-bottom: 10px;"
-                        placeholder="Max Mustermann max@beispiel.de&#10;vorname.nachname@ukr.de"></textarea>
-                    <button onclick="parseEmployeeInput()"
-                        style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Importieren</button>
-                </div>
+
                 <button id="add-employee-btn" class="hidden" onclick="addEmployee()">+ Neuer Mitarbeiter</button>
             </div>
         </main>
