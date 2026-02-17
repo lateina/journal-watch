@@ -211,7 +211,9 @@ function renderSchedule() {
             // Build Dropdown
             let options = `<option value="">-- Wähle Referent --</option>`;
             if (currentEmployees && Array.isArray(currentEmployees)) {
-                currentEmployees.forEach(emp => {
+                // Sort by name for dropdown
+                const sortedEmps = [...currentEmployees].sort(sortEmployeesByName);
+                sortedEmps.forEach(emp => {
                     if (emp.active) {
                         const selected = (slot.presenter === emp.name) ? 'selected' : '';
                         options += `<option value="${emp.name}" ${selected}>${emp.name}</option>`;
@@ -237,7 +239,7 @@ function renderSchedule() {
                 ${isAdmin ? `
                 <select class="swap-select" onchange="handleSwap(${index}, this.value)">
                     <option value="">Tauschen...</option>
-                    ${currentEmployees.filter(e => e.active && e.name !== slot.presenter).map(e => `<option value="${e.name}">${e.name}</option>`).join('')}
+                    ${[...currentEmployees].filter(e => e.active && e.name !== slot.presenter).sort(sortEmployeesByName).map(e => `<option value="${e.name}">${e.name}</option>`).join('')}
                 </select>` : '-'}
             </td>
             <td>${topicCell}</td>
@@ -338,24 +340,8 @@ function renderEmployees() {
     // Make table visible
     table.classList.remove('hidden');
 
-    // Sort employees alphabetically by last name before rendering
-    currentEmployees.sort((a, b) => {
-        const nameA = a.name.trim();
-        const nameB = b.name.trim();
-
-        // Extract last name (last word)
-        const partsA = nameA.split(' ');
-        const lastNameA = partsA[partsA.length - 1].toLowerCase();
-
-        const partsB = nameB.split(' ');
-        const lastNameB = partsB[partsB.length - 1].toLowerCase();
-
-        if (lastNameA < lastNameB) return -1;
-        if (lastNameA > lastNameB) return 1;
-
-        // If last names match, fallback to full name
-        return nameA.localeCompare(nameB);
-    });
+    // Sort employees using helper
+    currentEmployees.sort(sortEmployeesByName);
 
     tbody.innerHTML = '';
 
@@ -364,12 +350,14 @@ function renderEmployees() {
 
         let nameCell = emp.name;
         let emailCell = emp.email;
+        let oaCell = emp.isOberarzt ? "Ja" : "Nein";
         let activeCell = emp.active ? "Ja" : "Nein";
         let actionCell = "";
 
         if (isAdmin) {
             nameCell = `<input class="edit-field" value="${emp.name || ''}" onchange="updateEmployee(${index}, 'name', this.value)">`;
             emailCell = `<input class="edit-field" value="${emp.email || ''}" onchange="updateEmployee(${index}, 'email', this.value)">`;
+            oaCell = `<input type="checkbox" ${emp.isOberarzt ? 'checked' : ''} onchange="updateEmployee(${index}, 'isOberarzt', this.checked)">`;
             activeCell = `<input type="checkbox" ${emp.active ? 'checked' : ''} onchange="updateEmployee(${index}, 'active', this.checked)">`;
             actionCell = `<button class="delete-btn" onclick="deleteEmployee(${index})">Löschen</button>`;
         }
@@ -377,6 +365,7 @@ function renderEmployees() {
         row.innerHTML = `
             <td>${nameCell}</td>
             <td>${emailCell}</td>
+            <td>${oaCell}</td>
             <td>${activeCell}</td>
             <td class="admin-col ${isAdmin ? '' : 'hidden'}">${actionCell}</td>
         `;
@@ -487,7 +476,7 @@ window.updateEmployee = function (index, field, value) {
 
 window.addEmployee = function () {
     if (!currentEmployees) currentEmployees = [];
-    currentEmployees.push({ name: "Neu", email: "@", active: true });
+    currentEmployees.push({ name: "Neu", email: "@", active: true, isOberarzt: false });
     renderEmployees();
     renderSchedule(); // Update dropdowns immediately
 }
@@ -600,13 +589,10 @@ window.handleSwap = function (sourceIndex, targetName) {
         .map(({ idx }) => idx);
 
     if (targetIndices.length === 0) {
+        // ... (existing swap logic)
         // Case 3: No target slots -> Replacement
         if (confirm(`'${targetName}' hat keine eigenen Termine.\nSoll er/sie diesen Termin (${sourceSlot.date}) übernehmen?`)) {
             sourceSlot.presenter = targetName;
-            // Clear stats/forgotten flags? Maybe keep them?
-            // If replacing, we should probably reset forgotten status if it was set for the previous person?
-            // Let's leave flags as is for now, or reset forgotten if new person takes over?
-            // If source was forgotten, and new person takes over, is it still forgotten? Probably not.
             sourceSlot.forgotten = false;
             saveSchedule();
             renderSchedule();
@@ -622,9 +608,6 @@ window.handleSwap = function (sourceIndex, targetName) {
             sourceSlot.presenter = targetName;
             // Perform Swap
             sourceSlot.presenter = targetName;
-            // blockHoliday was implicit global, fixing it (though unused logically here, keeping for safety or removing if logic implies)
-            // Actually, we don't seem to use blockHoliday after assignment? 
-            // The original code assigned it. Let's declare it to be safe.
             const blockHoliday = checkHoliday(new Date(sourceSlot.date));
 
             targetSlot.presenter = sourceName;
@@ -637,6 +620,106 @@ window.handleSwap = function (sourceIndex, targetName) {
         }
     } else {
         // ... (rest of function)
+    }
+};
+
+// Start Helper: sortEmployeesByName
+function sortEmployeesByName(a, b) {
+    const nameA = a.name.trim();
+    const nameB = b.name.trim();
+
+    // Extract last name (last word)
+    const partsA = nameA.split(' ');
+    const lastNameA = partsA[partsA.length - 1].toLowerCase();
+
+    const partsB = nameB.split(' ');
+    const lastNameB = partsB[partsB.length - 1].toLowerCase();
+
+    if (lastNameA < lastNameB) return -1;
+    if (lastNameA > lastNameB) return 1;
+
+    // If last names match, fallback to full name
+    return nameA.localeCompare(nameB);
+}
+// End Helper
+
+window.autoDistribute = function () {
+    if (!currentSchedule || !currentEmployees) return;
+    if (!confirm("Automatische Verteilung starten?\n\n- Montags: Assistenzärzte\n- Mittwochs: Oberärzte\n- Alphabetisch fortlaufend ab letztem Eintrag.\n\nNur leere, zukünftige Slots werden gefüllt.")) return;
+
+    // Filter active employees
+    const activeEmployees = currentEmployees.filter(e => e.active);
+    const oaList = activeEmployees.filter(e => e.isOberarzt).sort(sortEmployeesByName);
+    const assistList = activeEmployees.filter(e => !e.isOberarzt).sort(sortEmployeesByName);
+
+    if (oaList.length === 0 && assistList.length === 0) {
+        alert("Keine aktiven Mitarbeiter gefunden.");
+        return;
+    }
+
+    // 2. Find last assigned indices
+    let lastOAName = null;
+    let lastAssistName = null;
+
+    // We assume chronological order in currentSchedule
+    // Find the very last assignment in the ENTIRE schedule (past or future) to determine sequence
+    // Note: The user wants to continue *after the last employee already distributed in the schedule*.
+    // So we iterate backwards to find the last occurrence of someone from each list.
+
+    for (let i = currentSchedule.length - 1; i >= 0; i--) {
+        const slot = currentSchedule[i];
+        if (slot.presenter && slot.presenter !== "") {
+            if (!lastOAName && oaList.find(e => e.name === slot.presenter)) {
+                lastOAName = slot.presenter;
+            }
+            if (!lastAssistName && assistList.find(e => e.name === slot.presenter)) {
+                lastAssistName = slot.presenter;
+            }
+        }
+        if (lastOAName && lastAssistName) break;
+    }
+
+    let nextOAIndex = 0;
+    if (lastOAName) {
+        const idx = oaList.findIndex(e => e.name === lastOAName);
+        if (idx !== -1) nextOAIndex = (idx + 1) % oaList.length;
+    }
+
+    let nextAssistIndex = 0;
+    if (lastAssistName) {
+        const idx = assistList.findIndex(e => e.name === lastAssistName);
+        if (idx !== -1) nextAssistIndex = (idx + 1) % assistList.length;
+    }
+
+    // 3. Distribute
+    let filledCount = 0;
+    const today = new Date().toISOString().split('T')[0];
+
+    currentSchedule.forEach(slot => {
+        // Only future, empty slots, not holidays
+        if (slot.date >= today && (!slot.presenter || slot.presenter === "") && !checkHoliday(new Date(slot.date))) {
+            const dateObj = new Date(slot.date);
+            const day = dateObj.getDay(); // 1 = Mon, 3 = Wed
+
+            if (day === 1 && assistList.length > 0) {
+                // Monday -> Assistenzarzt
+                slot.presenter = assistList[nextAssistIndex].name;
+                nextAssistIndex = (nextAssistIndex + 1) % assistList.length;
+                filledCount++;
+            } else if (day === 3 && oaList.length > 0) {
+                // Wednesday -> Oberarzt
+                slot.presenter = oaList[nextOAIndex].name;
+                nextOAIndex = (nextOAIndex + 1) % oaList.length;
+                filledCount++;
+            }
+        }
+    });
+
+    if (filledCount > 0) {
+        renderSchedule();
+        alert(`${filledCount} Termine automatisch verteilt.\nBitte "Speichern" nicht vergessen!`);
+    } else {
+        alert("Keine freien Termine gefunden oder keine Mitarbeiter verfügbar.");
     }
 };
 
