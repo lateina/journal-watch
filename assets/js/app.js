@@ -35,6 +35,10 @@ function setupEventListeners() {
     // if (addEmpBtn) {
     //    addEmpBtn.addEventListener('click', addEmployee);
     // }
+
+    // Print Button
+    const printBtn = document.getElementById('print-btn');
+    if (printBtn) printBtn.addEventListener('click', () => window.print());
 }
 
 // --- Initialization ---
@@ -239,11 +243,21 @@ function renderSchedule() {
             <td>${topicCell}</td>
         `;
 
-        if (slot.date < today && !isHoliday && !slot.forgotten) row.style.opacity = '0.5';
+        if (slot.date < today) {
+            row.classList.add('past-row');
+            if (!isHoliday && !slot.forgotten) row.style.opacity = '0.5';
+        }
         tbody.appendChild(row);
     });
 
     updateAdminUI();
+
+    // Update Print Header "Stand" date
+    const standDateEl = document.getElementById('print-stand-date');
+    if (standDateEl) {
+        const now = new Date();
+        standDateEl.textContent = "Stand: " + now.toLocaleDateString('de-DE');
+    }
 }
 
 // --- Helper: Holidays 2026 (Bavaria) ---
@@ -542,6 +556,13 @@ window.checkLogin = async function () {
             renderSchedule();
             renderEmployees();
             updateAdminUI();
+
+            // Update Print Header "Stand" date
+            const standDateEl = document.getElementById('print-stand-date');
+            if (standDateEl) {
+                const now = new Date();
+                standDateEl.textContent = "Stand: " + now.toLocaleDateString('de-DE');
+            }
         } else {
             throw new Error("Ungültiger Key");
         }

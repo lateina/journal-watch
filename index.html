@@ -149,8 +149,33 @@
 
             <!-- Schedule Tab -->
             <div id="tab-schedule" class="tab-content">
+                <div style="text-align: right; margin-bottom: 10px;">
+                    <button id="print-btn" class="edit-btn" style="background: #7f8c8d;">🖨️ Drucken</button>
+                </div>
                 <table id="schedule-table" class="hidden">
                     <thead>
+                        <tr class="print-header-row">
+                            <th colspan="7">
+                                <div id="print-header-content">
+                                    <div class="print-header-logos">
+                                        <img src="assets/img/herzzentrum_logo.jpg" alt="Herzzentrum Logo"
+                                            class="print-logo-left">
+                                        <img src="assets/img/ukr_logo_1.png" alt="UKR Logo" class="print-logo-right">
+                                    </div>
+                                    <div class="print-header-info">
+                                        <p>Klinik und Poliklinik für Innere Medizin II<br>
+                                            (Kardiologie, Pneumologie und Internistische Intensivmedizin)<br>
+                                            <strong>Direktor: Universitätsprofessor Dr. med. Lars S. Maier</strong>
+                                        </p>
+                                    </div>
+                                    <div class="print-header-title">
+                                        <h1>JOURNAL WATCH</h1>
+                                        <h2>INTERNISTISCHE FALLBESPRECHUNG</h2>
+                                        <p id="print-stand-date">Stand: --.--.----</p>
+                                    </div>
+                                </div>
+                            </th>
+                        </tr>
                         <tr>
                             <th>Datum</th>
                             <th>Tag</th>
@@ -164,6 +189,17 @@
                     <tbody id="schedule-body">
                         <!-- Rows will be inserted here -->
                     </tbody>
+                    <tfoot>
+                        <tr class="print-footer-row">
+                            <td colspan="7">
+                                <div id="print-footer-content">
+                                    <p style="margin-bottom: 30px;">
+                                        ______________________________________________________</p>
+                                    <p><strong>Prof. Dr. med. Stefan Wagner</strong></p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
 
@@ -221,6 +257,8 @@
             <p id="login-error" style="color:red; display:none;">Ungültiger Key!</p>
         </div>
     </div>
+
+
 
     <script src="assets/js/app.js"></script>
 </body>
