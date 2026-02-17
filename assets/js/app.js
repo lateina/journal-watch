@@ -212,10 +212,11 @@ function renderSchedule() {
             <td class="center-text stats-tooltip">${combinedStatsCell}</td>
             <td class="center-text">${forgottenCell}</td>
             <td class="center-text">
+                ${isAdmin ? `
                 <select class="swap-select" onchange="handleSwap(${index}, this.value)">
                     <option value="">Tauschen...</option>
                     ${currentEmployees.filter(e => e.active && e.name !== slot.presenter).map(e => `<option value="${e.name}">${e.name}</option>`).join('')}
-                </select>
+                </select>` : '-'}
             </td>
             <td>${topicCell}</td>
         `;
@@ -351,6 +352,70 @@ function updateAdminUI() {
     if (employeeTabBtn) {
         if (isAdmin) employeeTabBtn.classList.remove('hidden');
         else employeeTabBtn.classList.add('hidden');
+    }
+
+    // Toggle Bulk Import Section
+    const bulkImportSection = document.getElementById('bulk-import-section');
+    if (bulkImportSection) {
+        if (isAdmin) bulkImportSection.classList.remove('hidden');
+        else bulkImportSection.classList.add('hidden');
+    }
+}
+
+window.parseEmployeeInput = function () {
+    const textarea = document.getElementById('bulk-import-text');
+    if (!textarea) return;
+
+    const text = textarea.value;
+    if (!text.trim()) {
+        alert("Bitte Text eingeben.");
+        return;
+    }
+
+    const lines = text.split('\n');
+    let addedCount = 0;
+
+    lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
+
+        // Try to extract email
+        // Simple regex for email: something@something.something
+        const emailMatch = line.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/);
+        let email = "@";
+        let name = line;
+
+        if (emailMatch) {
+            email = emailMatch[0];
+            // Remove email from line to get name
+            name = line.replace(email, "").trim();
+            // Clean up name (remove potential brackets/parentheses around email if they were not part of the match)
+            name = name.replace(/[<>()\[\]]/g, "").trim();
+
+            // If name is empty, try to derive from email (format: firstname.lastname@...)
+            if (!name && email.includes('@')) {
+                const localPart = email.split('@')[0];
+                if (localPart.includes('.')) {
+                    name = localPart.split('.').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+                } else {
+                    name = localPart.charAt(0).toUpperCase() + localPart.slice(1);
+                }
+            }
+        }
+
+        if (name) {
+            currentEmployees.push({ name: name, email: email, active: true });
+            addedCount++;
+        }
+    });
+
+    if (addedCount > 0) {
+        renderEmployees();
+        renderSchedule(); // Update dropdowns
+        alert(`${addedCount} Mitarbeiter hinzugefügt.\nBitte "Speichern" nicht vergessen!`);
+        textarea.value = ""; // Clear input
+    } else {
+        alert("Keine gültigen Daten gefunden.");
     }
 }
 
