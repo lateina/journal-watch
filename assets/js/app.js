@@ -1,10 +1,10 @@
-const SCHEDULE_BIN_ID = CONFIG.SCHEDULE_BIN_ID; // Schedule
-const EMPLOYEES_BIN_ID = CONFIG.EMPLOYEES_BIN_ID; // Employees
-const API_KEY = CONFIG.API_KEY; // Master Key
+const SCHEDULE_BIN_ID = "699332e2ae596e708f2f7434"; // Schedule
+const EMPLOYEES_BIN_ID = "699333dcd0ea881f40bf132f"; // Employees
 
 let currentSchedule = [];
 let currentEmployees = [];
 let isAdmin = false;
+let apiKey = null;
 
 function setupEventListeners() {
     // Tabs
@@ -26,7 +26,7 @@ function setupEventListeners() {
     const saveBtn = document.querySelector('.save-btn');
     if (saveBtn) saveBtn.addEventListener('click', saveSchedule);
 
-    const logoutBtn = document.querySelector('#admin-panel button:last-of-type'); // Logout
+    const logoutBtn = document.querySelector('#logout-btn'); // Logout
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
     // Add Employee
@@ -43,9 +43,11 @@ async function init() {
     console.log("App initializing...");
     setupEventListeners(); // Bind events first
 
-    // Check local storage for session
-    if (localStorage.getItem('journal_admin_session') === 'true') {
-        isAdmin = true;
+    // Check local storage for key
+    const storedKey = localStorage.getItem('journal_api_key');
+    if (storedKey) {
+        apiKey = storedKey;
+        isAdmin = true; // If we have a key, we are admin (since there is only one key)
         document.getElementById('login-btn').classList.add('hidden');
         const adminPanel = document.getElementById('admin-panel');
         if (adminPanel) adminPanel.classList.remove('hidden');
@@ -66,9 +68,18 @@ document.addEventListener('DOMContentLoaded', init);
 // --- Data Loading ---
 
 async function fetchData(binId) {
+    if (!apiKey) {
+        throw new Error("Bitte einloggen.");
+    }
+
     const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-        headers: { "X-Master-Key": API_KEY }
+        headers: { "X-Master-Key": apiKey }
     });
+
+    if (response.status === 401 || response.status === 403) {
+        throw new Error("Zugriff verweigert (Falscher Key?).");
+    }
+
     if (!response.ok) throw new Error(`Fehler: ${response.status}`);
     const data = await response.json();
     return data.record;
@@ -491,55 +502,15 @@ window.hideLogin = function () {
     document.getElementById('password-input').value = '';
 }
 
-const ADMIN_HASH = "c773213c741cf9f3a0fa57ceaa90a4aa6d1ba4e6872133abea9ef0bf7d45bec9"; // SHA-256 of journal2026
-
-async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
-}
-
-window.checkLogin = async function () {
-    const input = document.getElementById('password-input').value;
-    const inputHash = await sha256(input);
-
-    if (inputHash === ADMIN_HASH) {
-        isAdmin = true;
-        localStorage.setItem('journal_admin_session', 'true'); // Persist
-        document.getElementById('login-btn').classList.add('hidden');
-        const adminPanel = document.getElementById('admin-panel');
-        if (adminPanel) adminPanel.classList.remove('hidden');
-        hideLogin();
-        renderSchedule();
-        renderEmployees();
-
-        // Ensure bulk import & swap dropdowns are updated
-        updateAdminUI();
-    } else {
-        const err = document.getElementById('login-error');
-        if (err) err.style.display = 'block';
-    }
-}
+// Old password check removed
 
 window.logout = function () {
     isAdmin = false;
-    localStorage.removeItem('journal_admin_session'); // Clear
-    document.getElementById('login-btn').classList.remove('hidden');
-    document.getElementById('admin-panel').classList.add('hidden');
+    apiKey = null;
+    localStorage.removeItem('journal_api_key'); // Clear
 
-    // Switch back to schedule if on employees tab
-    const employeeTabContent = document.getElementById('tab-employees');
-    if (employeeTabContent && !employeeTabContent.classList.contains('hidden')) {
-        switchTab('schedule');
-    }
-
-    renderSchedule();
-    renderEmployees();
+    location.reload(); // Reload to reset state (simplest way to clear data from memory)
 }
-
-// --- Swap Logic ---
 window.handleSwap = function (sourceIndex, targetName) {
     if (!targetName) return;
 

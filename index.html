@@ -141,7 +141,11 @@
 
         <main>
             <div id="loading">Lade Daten...</div>
-            <div id="error-message" class="hidden"></div>
+            <div id="error-message" class="hidden" style="text-align: center; margin-top: 50px;">
+                <p>Bitte einloggen, um den Plan zu sehen.</p>
+                <button onclick="showLogin()"
+                    style="margin-top: 10px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Login</button>
+            </div>
 
             <!-- Schedule Tab -->
             <div id="tab-schedule" class="tab-content">
@@ -209,11 +213,12 @@
     <!-- Login Modal -->
     <div id="login-modal" class="hidden">
         <div id="login-box">
-            <h3>Bearbeiter Login</h3>
-            <input type="password" id="password-input" placeholder="Passwort">
+            <h3>Login</h3>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">Bitte Master Key eingeben</p>
+            <input type="password" id="password-input" placeholder="Master Key (API Key)">
             <button onclick="checkLogin()">Login</button>
             <button onclick="hideLogin()">Abbrechen</button>
-            <p id="login-error" style="color:red; display:none;">Falsches Passwort!</p>
+            <p id="login-error" style="color:red; display:none;">Ungültiger Key!</p>
         </div>
     </div>
 
