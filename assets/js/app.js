@@ -504,6 +504,50 @@ window.hideLogin = function () {
 
 // Old password check removed
 
+window.checkLogin = async function () {
+    const input = document.getElementById('password-input').value.trim();
+    if (!input) return;
+
+    // Test the key by trying to fetch the schedule
+    const originalText = document.querySelector('#login-box button:first-of-type').textContent;
+    document.querySelector('#login-box button:first-of-type').textContent = "Prüfe...";
+
+    try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${SCHEDULE_BIN_ID}/latest`, {
+            headers: { "X-Master-Key": input }
+        });
+
+        if (response.ok) {
+            // Success!
+            apiKey = input;
+            isAdmin = true;
+            localStorage.setItem('journal_api_key', apiKey); // Persist
+
+            document.getElementById('login-btn').classList.add('hidden');
+            const adminPanel = document.getElementById('admin-panel');
+            if (adminPanel) adminPanel.classList.remove('hidden');
+            hideLogin();
+
+            // Reload data with new key
+            await loadSchedule();
+            await loadEmployees();
+            renderSchedule();
+            renderEmployees();
+            updateAdminUI();
+        } else {
+            throw new Error("Ungültiger Key");
+        }
+    } catch (e) {
+        const err = document.getElementById('login-error');
+        if (err) {
+            err.textContent = "Ungültiger Master Key!";
+            err.style.display = 'block';
+        }
+    } finally {
+        document.querySelector('#login-box button:first-of-type').textContent = originalText;
+    }
+}
+
 window.logout = function () {
     isAdmin = false;
     apiKey = null;
