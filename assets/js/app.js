@@ -345,6 +345,13 @@ function updateAdminUI() {
         if (isAdmin) addBtn.classList.remove('hidden');
         else addBtn.classList.add('hidden');
     }
+
+    // Toggle Employee Tab Visibility
+    const employeeTabBtn = document.querySelector('button[data-tab="employees"]');
+    if (employeeTabBtn) {
+        if (isAdmin) employeeTabBtn.classList.remove('hidden');
+        else employeeTabBtn.classList.add('hidden');
+    }
 }
 
 // --- Updates (Memory) ---
@@ -423,6 +430,13 @@ window.logout = function () {
     localStorage.removeItem('journal_admin_session'); // Clear
     document.getElementById('login-btn').classList.remove('hidden');
     document.getElementById('admin-panel').classList.add('hidden');
+
+    // Switch back to schedule if on employees tab
+    const employeeTabContent = document.getElementById('tab-employees');
+    if (employeeTabContent && !employeeTabContent.classList.contains('hidden')) {
+        switchTab('schedule');
+    }
+
     renderSchedule();
     renderEmployees();
 }

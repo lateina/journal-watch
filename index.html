@@ -10,10 +10,10 @@
     <style>
         /* Admin UI Styles */
         #admin-controls {
-            margin-top: 2rem;
+            margin-top: 1rem;
             text-align: center;
-            border-top: 1px solid #eee;
-            padding-top: 1rem;
+            /* border-top: 1px solid #eee;  Removed for header */
+            /* padding-top: 1rem; Removed for header */
         }
 
         .edit-btn {
@@ -124,6 +124,14 @@
         <header>
             <h1>Journal Watch Plan</h1>
             <p>Kommende Präsentationen</p>
+            <div id="admin-controls">
+                <button id="login-btn">Admin Login</button>
+                <div id="admin-panel" class="hidden">
+                    <span style="font-size: 0.9rem; margin-right: 10px;">Admin Modus</span>
+                    <button class="save-btn" style="margin-top: 0; padding: 5px 15px;">Speichern</button>
+                    <button id="logout-btn" style="margin-left: 5px; padding: 5px 10px;">Logout</button>
+                </div>
+            </div>
         </header>
 
         <div class="tabs">
@@ -176,14 +184,6 @@
 
         <footer>
             <p>&copy; 2026 Journal Watch</p>
-            <div id="admin-controls">
-                <button id="login-btn">Admin Login</button>
-                <div id="admin-panel" class="hidden">
-                    <p>Admin Modus Aktiv</p>
-                    <button class="save-btn">Änderungen speichern</button>
-                    <button id="logout-btn">Logout</button>
-                </div>
-            </div>
         </footer>
     </div>
 
