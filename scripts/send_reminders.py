@@ -25,13 +25,21 @@ def send_email(to_email, presenter_name, date_str):
     body = f"""
     Hallo {presenter_name},
     
-    Dies ist eine automatische Erinnerung.
+    Dies ist eine Erinnerung.
     Sie sind für den Journal Watch am {date_str} eingeteilt.
     
     Bitte bereiten Sie Ihren Beitrag vor.
     
-    Viele Grüße,
-    Journal Watch Bot
+    Mit freundlichen Grüßen,
+    A. Rohrmaier
+
+    Astrid Rohrmaier
+    Oberarzt-Sekretariat Kardiologie
+    Universitätsklinikum Regensburg
+    Franz-Josef-Strauß-Allee 11
+    93053 Regensburg
+    astrid.rohrmaier@ukr.de
+    Tel.: 0941-9447207
     """
     
     msg = MIMEMultipart()
