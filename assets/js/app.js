@@ -131,6 +131,14 @@ function renderSchedule() {
     const tbody = document.getElementById('schedule-body');
     const table = document.getElementById('schedule-table');
     document.getElementById('loading').classList.add('hidden');
+
+    // Hide error message on successful render
+    const errorDiv = document.getElementById('error-message');
+    if (errorDiv) {
+        errorDiv.classList.add('hidden');
+        errorDiv.style.display = ''; // Reset inline display if any
+    }
+
     table.classList.remove('hidden');
 
     currentSchedule.sort((a, b) => new Date(a.date) - new Date(b.date));
