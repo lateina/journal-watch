@@ -205,6 +205,14 @@ function renderSchedule() {
             }
 
             if (slot.forgotten) row.classList.add('forgotten-row');
+
+            // specific check for OA
+            if (slot.presenter) {
+                const emp = currentEmployees.find(e => e.name === slot.presenter);
+                if (emp && emp.isOberarzt) {
+                    row.classList.add('oa-row');
+                }
+            }
         }
 
         if (isAdmin && !isHoliday) {

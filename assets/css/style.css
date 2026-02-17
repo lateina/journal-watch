@@ -146,6 +146,19 @@ tr:hover {
     background-color: #fadbd8;
 }
 
+.oa-row {
+    background-color: #e8f6f3;
+    /* Light teal/mint */
+}
+
+@media print {
+    .oa-row {
+        background-color: #e8f6f3 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
 .col-narrow {
     width: 80px;
     white-space: nowrap;
