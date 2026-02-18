@@ -96,8 +96,10 @@ def main():
             presenter = slot.get('presenter')
             if presenter and presenter in employee_map:
                 email = employee_map[presenter]
+                date_obj = datetime.strptime(slot['date'], "%Y-%m-%d")
+                formatted_date = date_obj.strftime("%d.%m.%Y")
                 print(f"Found slot for {presenter} on {slot['date']} ({email})")
-                send_email(email, presenter, slot['date'])
+                send_email(email, presenter, formatted_date)
                 count += 1
             elif presenter:
                 print(f"Warning: No email found for presenter '{presenter}' on {slot['date']}")

@@ -38,7 +38,7 @@ function setupEventListeners() {
 
     // Print Button
     const printBtn = document.getElementById('print-btn');
-    if (printBtn) printBtn.addEventListener('click', () => window.print());
+    if (printBtn) printBtn.addEventListener('click', () => showPrintModal());
 }
 
 // --- Initialization ---
@@ -216,24 +216,36 @@ function renderSchedule() {
         }
 
         if (isAdmin && !isHoliday) {
-            // Build Dropdown
-            let options = `<option value="">-- Wähle Referent --</option>`;
-            if (currentEmployees && Array.isArray(currentEmployees)) {
-                // Sort by name for dropdown
-                const sortedEmps = [...currentEmployees].sort(sortEmployeesByName);
-                sortedEmps.forEach(emp => {
-                    if (emp.active) {
-                        const selected = (slot.presenter === emp.name) ? 'selected' : '';
-                        options += `<option value="${emp.name}" ${selected}>${emp.name}</option>`;
-                    }
-                });
-            }
-            // Keep current value if not in list (legacy support)
-            if (slot.presenter && (!currentEmployees || !currentEmployees.find(e => e.name === slot.presenter && e.active))) {
-                options += `<option value="${slot.presenter}" selected>${slot.presenter} (Archiv)</option>`;
-            }
+            if (slot.forgotten && slot.presenter) {
+                // If forgotten, show static name with strikethrough
+                presenterCell = `<span style="text-decoration: line-through; color: #888; font-weight: bold;">${slot.presenter}</span>`;
+            } else {
+                // Build Dropdown
+                // Determine Role based on Day (Monday=AA, Wednesday=OA)
+                const day = dateObj.getDay();
+                const isOberarztDay = (day === 3);
 
-            presenterCell = `<select class="edit-field" onchange="updateSlot(${index}, 'presenter', this.value)">${options}</select>`;
+                let options = `<option value="">-- Wähle Referent --</option>`;
+                if (currentEmployees && Array.isArray(currentEmployees)) {
+                    // Sort by name for dropdown
+                    const sortedEmps = [...currentEmployees].sort(sortEmployeesByName);
+                    sortedEmps.forEach(emp => {
+                        if (emp.active) {
+                            // Filter by role matching the day
+                            if (!!emp.isOberarzt === isOberarztDay || slot.presenter === emp.name) {
+                                const selected = (slot.presenter === emp.name) ? 'selected' : '';
+                                options += `<option value="${emp.name}" ${selected}>${emp.name}</option>`;
+                            }
+                        }
+                    });
+                }
+                // Keep current value if not in list (legacy support)
+                if (slot.presenter && (!currentEmployees || !currentEmployees.find(e => e.name === slot.presenter && e.active))) {
+                    options += `<option value="${slot.presenter}" selected>${slot.presenter} (Archiv)</option>`;
+                }
+
+                presenterCell = `<select class="edit-field" onchange="updateSlot(${index}, 'presenter', this.value)">${options}</select>`;
+            }
             topicCell = `<input class="edit-field" value="${slot.topic || ''}" onchange="updateSlot(${index}, 'topic', this.value)" placeholder="Thema">`;
         }
 
@@ -245,6 +257,8 @@ function renderSchedule() {
             <td class="center-text">${forgottenCell}</td>
             <td class="center-text">
                 ${isAdmin ? (() => {
+                if (slot.forgotten) return '-';
+
                 // Determine Role for Swap Filter
                 let isOberarztSlot = false;
                 const day = dateObj.getDay();
@@ -260,7 +274,10 @@ function renderSchedule() {
                 }
 
                 const swapOptions = [...currentEmployees]
-                    .filter(e => e.active && e.name !== slot.presenter && !!e.isOberarzt === isOberarztSlot)
+                    .filter(e => {
+                        const hasAppointments = (stats[e.name] || 0) + (forgottenStats[e.name] || 0) > 0;
+                        return e.active && e.name !== slot.presenter && !!e.isOberarzt === isOberarztSlot && hasAppointments;
+                    })
                     .sort(sortEmployeesByName)
                     .map(e => `<option value="${e.name}">${e.name}</option>`)
                     .join('');
@@ -293,6 +310,16 @@ function renderSchedule() {
 
 // --- Helper: Holidays 2026 (Bavaria) ---
 function checkHoliday(dateObj) {
+    // Christmas Holidays 2026/2027: Dec 24, 2026 - Jan 8, 2027
+    // Check this FIRST to allow 2027 dates in this range
+    const time = dateObj.getTime();
+    const xmasStart = new Date('2026-12-24').getTime();
+    const xmasEnd = new Date('2027-01-08').getTime();
+
+    if (time >= xmasStart && time <= xmasEnd) {
+        return "Weihnachtsferien";
+    }
+
     const year = dateObj.getFullYear();
     if (year !== 2026) return null; // Logic focused on 2026 for now as requested
 
@@ -322,12 +349,30 @@ function checkHoliday(dateObj) {
     // Summer Holidays 2026: Aug 3 - Sep 14
     // Month is 0-indexed in JS Date, but I used 1-based above.
     // Let's use numeric comparison for ranges.
-    const time = dateObj.getTime();
+
     const summerStart = new Date('2026-08-03').getTime();
     const summerEnd = new Date('2026-09-14').getTime();
 
     if (time >= summerStart && time <= summerEnd) {
         return "Sommerferien";
+    }
+
+
+
+    // DGK Kongress 2026: Apr 8 - Apr 11
+    const dgkStart = new Date('2026-04-08').getTime();
+    const dgkEnd = new Date('2026-04-11').getTime();
+
+    if (time >= dgkStart && time <= dgkEnd) {
+        return "DGK Kongress";
+    }
+
+    // ESC Kongress 2026: Aug 27 - Aug 31
+    const escStart = new Date('2026-08-27').getTime();
+    const escEnd = new Date('2026-08-31').getTime();
+
+    if (time >= escStart && time <= escEnd) {
+        return "ESC Kongress";
     }
 
     return null;
@@ -621,19 +666,17 @@ window.handleSwap = function (sourceIndex, targetName) {
 
     const sourceSlot = currentSchedule[sourceIndex];
     const sourceName = sourceSlot.presenter; // Might be empty
+    const today = new Date().toISOString().split('T')[0];
 
-    // Find all future non-holiday slots assigned to targetName
-    // We check the whole schedule but maybe we should focus on future?
-    // Let's stick to future slots to avoid confusion with past swaps
-    // Actually, user might want to swap with a past date if correcting mistakes?
-    // Let's filter for all valid slots that are NOT holidays.
-    const targetIndices = currentSchedule.map((slot, idx) => ({ slot, idx }))
-        .filter(({ slot }) => slot.presenter === targetName && !checkHoliday(new Date(slot.date)))
-        .map(({ idx }) => idx);
+    // Find all non-holiday slots assigned to targetName
+    // We prefer future slots
+    const allTargetSlots = currentSchedule.map((slot, idx) => ({ slot, idx }))
+        .filter(({ slot }) => slot.presenter === targetName && !checkHoliday(new Date(slot.date)));
+
+    const targetIndices = allTargetSlots.map(({ idx }) => idx);
 
     if (targetIndices.length === 0) {
-        // ... (existing swap logic)
-        // Case 3: No target slots -> Replacement
+        // Case 1: No target slots -> Replacement
         if (confirm(`'${targetName}' hat keine eigenen Termine.\nSoll er/sie diesen Termin (${sourceSlot.date}) übernehmen?`)) {
             sourceSlot.presenter = targetName;
             sourceSlot.forgotten = false;
@@ -643,26 +686,44 @@ window.handleSwap = function (sourceIndex, targetName) {
             renderSchedule(); // Reset dropdown
         }
     } else if (targetIndices.length === 1) {
-        // Case 1: Exactly one target slot -> Swap
+        // Case 2: Exactly one target slot -> Simple Swap
         const targetIndex = targetIndices[0];
         const targetSlot = currentSchedule[targetIndex];
         if (confirm(`Tausch bestätigen:\n\n${sourceName || "Leer"} (${sourceSlot.date})\n↔\n${targetName} (${targetSlot.date})`)) {
-            // Perform Swap
             sourceSlot.presenter = targetName;
-            // Perform Swap
-            sourceSlot.presenter = targetName;
-            const blockHoliday = checkHoliday(new Date(sourceSlot.date));
-
             targetSlot.presenter = sourceName;
-            // Reset forgotten on both? Or swap them?
-            // Only reset if it makes sense. Let's just swap names.
+            // Also swap forgotten status to be consistent? 
+            // Usually, a swap means the persons swap their duties, not their "forgotten" history.
+            // But if one was already "forgotten", it shouldn't stick to the new person.
+            sourceSlot.forgotten = false;
+            targetSlot.forgotten = false;
+
             saveSchedule();
             renderSchedule();
         } else {
-            renderSchedule(); // Reset dropdown
+            renderSchedule();
         }
     } else {
-        // ... (rest of function)
+        // Case 3: Multiple target slots -> Pick the next upcoming one
+        // Try to find the first future slot
+        let targetIndex = targetIndices.find(idx => currentSchedule[idx].date >= today);
+
+        // Fallback to the first available if all are in the past
+        if (targetIndex === undefined) targetIndex = targetIndices[0];
+
+        const targetSlot = currentSchedule[targetIndex];
+
+        if (confirm(`'${targetName}' hat mehrere Termine. Tausch mit dem nächsten am ${targetSlot.date}?\n\n${sourceName || "Leer"} (${sourceSlot.date})\n↔\n${targetName} (${targetSlot.date})`)) {
+            sourceSlot.presenter = targetName;
+            targetSlot.presenter = sourceName;
+            sourceSlot.forgotten = false;
+            targetSlot.forgotten = false;
+
+            saveSchedule();
+            renderSchedule();
+        } else {
+            renderSchedule();
+        }
     }
 };
 
@@ -688,7 +749,7 @@ function sortEmployeesByName(a, b) {
 
 window.autoDistribute = function () {
     if (!currentSchedule || !currentEmployees) return;
-    if (!confirm("Automatische Verteilung starten?\n\n- Montags: Assistenzärzte\n- Mittwochs: Oberärzte\n- Alphabetisch fortlaufend ab letztem Eintrag.\n\nNur leere, zukünftige Slots werden gefüllt.")) return;
+    if (!confirm("Automatische Verteilung starten?\n\n- Montags: Assistenzärzte\n- Mittwochs: Oberärzte\n- Alphabetisch fortlaufend ab letztem Eintrag.\n\nNur leere Slots bis zum Ende des NÄCHSTEN Quartals werden gefüllt.\nACHTUNG: Alle Termine NACH dem nächsten Quartal werden gelöscht!")) return;
 
     // Filter active employees
     const activeEmployees = currentEmployees.filter(e => e.active);
@@ -734,37 +795,217 @@ window.autoDistribute = function () {
         if (idx !== -1) nextAssistIndex = (idx + 1) % assistList.length;
     }
 
+    // Determine End of Current Quarter (Fixed Logic)
+    const todayDate = new Date();
+    const currentMonth = todayDate.getMonth(); // 0-11
+    const currentYear = todayDate.getFullYear();
+
+    // Quarter mapping:
+    // Q1 (Jan-Mar): Ends March 31
+    // Q2 (Apr-Jun): Ends June 30
+    // Q3 (Jul-Sep): Ends Sept 30
+    // Q4 (Oct-Dec): Ends Dec 31
+
+    // 1. Find end month of CURRENT quarter
+    let qEndMonth;
+    if (currentMonth <= 2) qEndMonth = 2;       // Q1: March
+    else if (currentMonth <= 5) qEndMonth = 5;  // Q2: June
+    else if (currentMonth <= 8) qEndMonth = 8;  // Q3: Sept
+    else qEndMonth = 11;                        // Q4: Dec
+
+    // 2. Add 3 months to get NEXT quarter end month
+    let nextQEndMonth = qEndMonth + 3;
+
+    // 3. Handle year wrap-around
+    if (nextQEndMonth > 11) {
+        nextQEndMonth -= 12;
+        currentYear += 1;
+    }
+
+    // 4. Determine last day of that month (year, month + 1, 0)
+    const limitDate = new Date(currentYear, nextQEndMonth + 1, 0, 23, 59, 59);
+
     // 3. Distribute
     let filledCount = 0;
-    const today = new Date().toISOString().split('T')[0];
+    let clearedCount = 0;
+    const todayStr = todayDate.toISOString().split('T')[0];
 
     currentSchedule.forEach(slot => {
-        // Only future, empty slots, not holidays
-        if (slot.date >= today && (!slot.presenter || slot.presenter === "") && !checkHoliday(new Date(slot.date))) {
-            const dateObj = new Date(slot.date);
-            const day = dateObj.getDay(); // 1 = Mon, 3 = Wed
+        const slotDateStr = slot.date;
+        const slotDateObj = new Date(slotDateStr);
 
-            if (day === 1 && assistList.length > 0) {
-                // Monday -> Assistenzarzt
-                slot.presenter = assistList[nextAssistIndex].name;
-                nextAssistIndex = (nextAssistIndex + 1) % assistList.length;
-                filledCount++;
-            } else if (day === 3 && oaList.length > 0) {
-                // Wednesday -> Oberarzt
-                slot.presenter = oaList[nextOAIndex].name;
-                nextOAIndex = (nextOAIndex + 1) % oaList.length;
-                filledCount++;
+        // Logic split:
+        // 1. If slot is in the past (< today): Ignore (don't change history)
+        // 2. If slot is today or future:
+        //    a. If <= quarterEndDate: Distribute if empty
+        //    b. If > quarterEndDate: Clear (as requested)
+
+        if (slotDateStr >= todayStr) {
+            if (slotDateObj <= limitDate) {
+                // Distribute Logic for Current + Next Quarter
+                // Only fill if empty and not holiday
+                if ((!slot.presenter || slot.presenter === "") && !checkHoliday(slotDateObj)) {
+                    const day = slotDateObj.getDay(); // 1 = Mon, 3 = Wed
+
+                    if (day === 1 && assistList.length > 0) {
+                        // Monday -> Assistenzarzt
+                        slot.presenter = assistList[nextAssistIndex].name;
+                        nextAssistIndex = (nextAssistIndex + 1) % assistList.length;
+                        filledCount++;
+                    } else if (day === 3 && oaList.length > 0) {
+                        // Wednesday -> Oberarzt
+                        slot.presenter = oaList[nextOAIndex].name;
+                        nextOAIndex = (nextOAIndex + 1) % oaList.length;
+                        filledCount++;
+                    }
+                }
+            } else {
+                // Clear Logic for Future Quarters
+                // Clear everything to ensure "freibleiben"
+                if (slot.presenter !== "" || slot.topic !== "" || slot.forgotten) {
+                    slot.presenter = "";
+                    slot.topic = "";
+                    slot.forgotten = false;
+                    clearedCount++;
+                }
             }
         }
     });
 
-    if (filledCount > 0) {
-        renderSchedule();
-        alert(`${filledCount} Termine automatisch verteilt.\nBitte "Speichern" nicht vergessen!`);
+    renderSchedule();
+
+    if (filledCount > 0 || clearedCount > 0) {
+        alert(`${filledCount} Termine verteilt.\n${clearedCount} Termine nach dem nächsten Quartal gelöscht.\nBitte "Speichern" nicht vergessen!`);
     } else {
-        alert("Keine freien Termine gefunden oder keine Mitarbeiter verfügbar.");
+        alert("Keine Änderungen (Zeitraum voll oder keine Mitarbeiter).");
     }
 };
+
+window.clearFutureQuarters = function () {
+    if (!currentSchedule) return;
+
+    // Determine End of Current Quarter
+    const todayDate = new Date();
+    const currentMonth = todayDate.getMonth(); // 0-11
+    const currentYear = todayDate.getFullYear();
+
+    // Quarter mapping:
+    let endMonth, endDay;
+    if (currentMonth <= 2) { endMonth = 2; endDay = 31; }      // Q1: March
+    else if (currentMonth <= 5) { endMonth = 5; endDay = 30; } // Q2: June
+    else if (currentMonth <= 8) { endMonth = 8; endDay = 30; } // Q3: Sept
+    else { endMonth = 11; endDay = 31; }                       // Q4: Dec
+
+    const quarterEndDate = new Date(currentYear, endMonth, endDay, 23, 59, 59);
+    const limitDateStr = quarterEndDate.toLocaleDateString('de-DE');
+
+    if (!confirm(`WARNUNG: Alle Termine AB dem nächsten Quartal (nach dem ${limitDateStr}) werden unwiderruflich gelöscht!\n\nFortfahren?`)) return;
+
+    let clearedCount = 0;
+    const todayStr = todayDate.toISOString().split('T')[0];
+
+    currentSchedule.forEach(slot => {
+        const slotDateStr = slot.date;
+        const slotDateObj = new Date(slotDateStr);
+
+        // Clear if date is in future AND after current quarter end
+        if (slotDateStr >= todayStr && slotDateObj > quarterEndDate) {
+            if (slot.presenter !== "" || slot.topic !== "" || slot.forgotten) {
+                slot.presenter = "";
+                slot.topic = "";
+                slot.forgotten = false;
+                clearedCount++;
+            }
+        }
+    });
+
+    if (clearedCount > 0) {
+        renderSchedule();
+        alert(`${clearedCount} Termine gelöscht.\nBitte "Speichern" nicht vergessen!`);
+    } else {
+        alert("Keine Termine im gewählten Zeitraum gefunden.");
+    }
+};
+
+
+
+// --- Print Filter ---
+
+window.showPrintModal = function () {
+    const modal = document.getElementById('print-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+
+        // Set default dates if empty
+        const startInput = document.getElementById('print-start');
+        const endInput = document.getElementById('print-end');
+
+        if (startInput && !startInput.value) {
+            startInput.value = new Date().toISOString().split('T')[0];
+        }
+    }
+}
+
+window.closePrintModal = function () {
+    const modal = document.getElementById('print-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+window.confirmPrint = function () {
+    const startVal = document.getElementById('print-start').value;
+    const endVal = document.getElementById('print-end').value;
+
+    if (!startVal) {
+        alert("Bitte Startdatum wählen.");
+        return;
+    }
+
+    // Convert strings to comparable integers YYYYMMDD
+    const startInt = parseInt(startVal.replace(/-/g, ''), 10);
+    const endInt = endVal ? parseInt(endVal.replace(/-/g, ''), 10) : null;
+
+    // 1. Hide unwanted rows
+    const rows = document.querySelectorAll('#schedule-body tr');
+    rows.forEach(row => {
+        const dateCell = row.cells[0]; // First cell is date
+        if (dateCell) {
+            // German Date format DD.MM.YYYY
+            const parts = dateCell.textContent.trim().split('.');
+            if (parts.length === 3) {
+                // Reassemble to YYYYMMDD
+                // Reassemble to YYYYMMDD (with padding)
+                const dPadded = parts[0].padStart(2, '0');
+                const mPadded = parts[1].padStart(2, '0');
+                const yPadded = parts[2];
+                const rowInt = parseInt(`${yPadded}${mPadded}${dPadded}`, 10);
+
+                let hide = false;
+                if (rowInt < startInt) hide = true;
+                if (endInt && rowInt > endInt) hide = true;
+
+                if (hide) {
+                    row.classList.add('print-hidden');
+                } else {
+                    row.classList.remove('print-hidden');
+                }
+            }
+        }
+    });
+
+    // 2. Hide modal
+    closePrintModal();
+
+    // 3. Print
+    // Small delay to ensure browser register DOM changes before snapshot
+    setTimeout(() => {
+        window.print();
+
+        // 4. Restore rows after print (delayed to allow dialog to open)
+        setTimeout(() => {
+            rows.forEach(row => row.classList.remove('print-hidden'));
+        }, 1000);
+    }, 100);
+}
 
 window.saveSchedule = async function () {
     const btn = document.querySelector('.save-btn');

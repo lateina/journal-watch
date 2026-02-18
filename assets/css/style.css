@@ -114,7 +114,7 @@ tr:hover {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 #error-message {
@@ -180,6 +180,10 @@ tr:hover {
     @page {
         margin: 0;
         size: auto;
+    }
+
+    .print-hidden {
+        display: none !important;
     }
 
     body {
@@ -330,9 +334,10 @@ tr:hover {
         display: none !important;
     }
 
-    /* Single page limit (16 content rows) */
-    /* Since we added header row to thead, content rows in tbody are still indexed from 1 */
+    /* Single page limit (16 content rows) - Removed to allow filters and longer ranges */
+    /*
     #schedule-body tr:nth-child(n+17) {
         display: none !important;
     }
+    */
 }
