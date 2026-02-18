@@ -447,7 +447,7 @@ function renderEmployees() {
             emailCell = `<input class="edit-field" value="${emp.email || ''}" onchange="updateEmployee(${index}, 'email', this.value)">`;
             oaCell = `<input type="checkbox" ${emp.isOberarzt ? 'checked' : ''} onchange="updateEmployee(${index}, 'isOberarzt', this.checked)">`;
             const activeTooltip = "Die Checkbox blendet Mitarbeiter temporär aus, die aktuell keine Fortbildungen übernehmen (z. B. durch Rotationen in andere Abteilungen oder längere Abwesenheit)";
-            activeCell = `<input type="checkbox" ${emp.active ? 'checked' : ''} onchange="updateEmployee(${index}, 'active', this.checked)" title="${activeTooltip}">`;
+            activeCell = `<span class="custom-tooltip" data-tooltip="${activeTooltip}"><input type="checkbox" ${emp.active ? 'checked' : ''} onchange="updateEmployee(${index}, 'active', this.checked)"></span>`;
             actionCell = `<button class="delete-btn" onclick="deleteEmployee(${index})">Löschen</button>`;
         }
 
