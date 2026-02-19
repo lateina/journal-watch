@@ -159,7 +159,7 @@
                 <table id="schedule-table" class="hidden">
                     <thead>
                         <tr class="print-header-row">
-                            <th colspan="7">
+                            <th colspan="8">
                                 <div id="print-header-content">
                                     <div class="print-header-logos">
                                         <img src="assets/img/herzzentrum_logo.jpg" alt="Herzzentrum Logo"
@@ -186,6 +186,7 @@
                             <th>Referent</th>
                             <th class="col-narrow center-text stats-tooltip">Statistik</th>
                             <th class="col-narrow center-text">Vergessen?</th>
+                            <th class="col-narrow center-text">Nachhol?</th>
                             <th class="center-text">Tausch</th>
                             <th>Thema (Optional)</th>
                         </tr>
@@ -195,7 +196,7 @@
                     </tbody>
                     <tfoot>
                         <tr class="print-footer-row">
-                            <td colspan="6">
+                            <td colspan="7">
                                 <div id="print-footer-content">
                                     <p style="margin-bottom: 30px;">
                                         ______________________________________________________</p>
@@ -276,19 +277,22 @@
         </div>
     </div>
 
-    <!-- Login Modal -->
-    <div id="login-modal" class="hidden">
-        <div id="login-box">
-            <h3>Login</h3>
-            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">Bitte Master Key eingeben</p>
-            <input type="password" id="password-input" placeholder="Master Key (API Key)">
-            <button>Login</button>
-            <button>Abbrechen</button>
-            <p id="login-error" style="color:red; display:none;">Ungültiger Key!</p>
+    <!-- Swap Selection Modal -->
+    <div id="swap-selection-modal" class="hidden"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1001;">
+        <div
+            style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); width: 400px; max-height: 80vh; overflow-y: auto;">
+            <h3 id="swap-modal-title">Termin zum Tauschen wählen</h3>
+            <p id="swap-modal-desc" style="font-size: 0.9em; color: #666; margin-bottom: 15px;"></p>
+            <div id="swap-options-list" style="text-align: left; margin-bottom: 20px;">
+                <!-- Options will be dynamic -->
+            </div>
+            <div style="text-align: center;">
+                <button id="cancel-swap-btn" onclick="closeSwapSelectionModal()"
+                    style="padding: 8px 15px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">Abbrechen</button>
+            </div>
         </div>
     </div>
-
-
 
     <script src="assets/js/app.js"></script>
 </body>

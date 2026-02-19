@@ -333,12 +333,14 @@ tr:hover {
 
     /* Hide columns - Note: updated indices for new table structure if needed */
     /* Datum(1), Tag(2), Referent(3), Statistik(4), Vergessen(5), Tausch(6), Thema(7) */
-    #schedule-table th:nth-child(6),
-    #schedule-table td:nth-child(6),
     #schedule-table th:nth-child(4),
     #schedule-table td:nth-child(4),
     #schedule-table th:nth-child(5),
-    #schedule-table td:nth-child(5) {
+    #schedule-table td:nth-child(5),
+    #schedule-table th:nth-child(6),
+    #schedule-table td:nth-child(6),
+    #schedule-table th:nth-child(7),
+    #schedule-table td:nth-child(7) {
         display: none;
     }
 

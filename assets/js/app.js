@@ -178,6 +178,7 @@ function renderSchedule() {
         let isHoliday = false;
         let countCell = "";
         let forgottenCell = "";
+        let nachholCell = "";
         let combinedStatsCell = "";
 
         if (holidayName) {
@@ -187,6 +188,7 @@ function renderSchedule() {
             topicCell = "Kein Journal Watch";
             combinedStatsCell = "-";
             forgottenCell = "-";
+            nachholCell = "-";
         } else {
             const count = (slot.presenter && stats[slot.presenter]) ? stats[slot.presenter] : 0;
             const fCount = (slot.presenter && forgottenStats[slot.presenter]) ? forgottenStats[slot.presenter] : 0;
@@ -205,6 +207,14 @@ function renderSchedule() {
             }
 
             if (slot.forgotten) row.classList.add('forgotten-row');
+
+            // Nachholtermin Logic
+            if (isAdmin) {
+                const checked = slot.isNachholtermin ? 'checked' : '';
+                nachholCell = `<input type="checkbox" ${checked} onchange="toggleNachholtermin(${index}, this.checked)">`;
+            } else {
+                nachholCell = slot.isNachholtermin ? "Ja" : "";
+            }
 
             // specific check for OA
             if (slot.presenter) {
@@ -255,6 +265,7 @@ function renderSchedule() {
             <td>${presenterCell}</td>
             <td class="center-text stats-tooltip">${combinedStatsCell}</td>
             <td class="center-text">${forgottenCell}</td>
+            <td class="center-text">${nachholCell}</td>
             <td class="center-text">
                 ${isAdmin ? (() => {
                 if (slot.forgotten) return '-';
@@ -377,6 +388,10 @@ function checkHoliday(dateObj) {
 
     return null;
 }
+window.toggleNachholtermin = function (index, isChecked) {
+    currentSchedule[index].isNachholtermin = isChecked;
+    renderSchedule();
+}
 window.toggleForgotten = function (index, isChecked) {
     const slot = currentSchedule[index];
     slot.forgotten = isChecked;
@@ -407,6 +422,7 @@ window.toggleForgotten = function (index, isChecked) {
 
                 potential.presenter = presenter;
                 potential.topic = `Nachholtermin für ${oldDate}`;
+                potential.isNachholtermin = true; // Mark as Nachholtermin
                 found = true;
                 alert(`${presenter} wurde automatisch auf den ${pDate.toLocaleDateString('de-DE')} verschoben.`);
                 break;
@@ -670,13 +686,10 @@ window.handleSwap = function (sourceIndex, targetName) {
     const today = new Date().toISOString().split('T')[0];
 
     // Find all non-holiday slots assigned to targetName
-    // We prefer future slots
     const allTargetSlots = currentSchedule.map((slot, idx) => ({ slot, idx }))
         .filter(({ slot }) => slot.presenter === targetName && !checkHoliday(new Date(slot.date)));
 
-    const targetIndices = allTargetSlots.map(({ idx }) => idx);
-
-    if (targetIndices.length === 0) {
+    if (allTargetSlots.length === 0) {
         // Case 1: No target slots -> Replacement
         if (confirm(`'${targetName}' hat keine eigenen Termine.\nSoll er/sie diesen Termin (${sourceSlot.date}) übernehmen?`)) {
             sourceSlot.presenter = targetName;
@@ -686,47 +699,79 @@ window.handleSwap = function (sourceIndex, targetName) {
         } else {
             renderSchedule(); // Reset dropdown
         }
-    } else if (targetIndices.length === 1) {
+    } else if (allTargetSlots.length === 1) {
         // Case 2: Exactly one target slot -> Simple Swap
-        const targetIndex = targetIndices[0];
+        const targetIndex = allTargetSlots[0].idx;
         const targetSlot = currentSchedule[targetIndex];
         if (confirm(`Tausch bestätigen:\n\n${sourceName || "Leer"} (${sourceSlot.date})\n↔\n${targetName} (${targetSlot.date})`)) {
-            sourceSlot.presenter = targetName;
-            targetSlot.presenter = sourceName;
-            // Also swap forgotten status to be consistent? 
-            // Usually, a swap means the persons swap their duties, not their "forgotten" history.
-            // But if one was already "forgotten", it shouldn't stick to the new person.
-            sourceSlot.forgotten = false;
-            targetSlot.forgotten = false;
-
-            saveSchedule();
-            renderSchedule();
+            executeSwap(sourceIndex, targetIndex);
         } else {
             renderSchedule();
         }
     } else {
-        // Case 3: Multiple target slots -> Pick the next upcoming one
-        // Try to find the first future slot
-        let targetIndex = targetIndices.find(idx => currentSchedule[idx].date >= today);
-
-        // Fallback to the first available if all are in the past
-        if (targetIndex === undefined) targetIndex = targetIndices[0];
-
-        const targetSlot = currentSchedule[targetIndex];
-
-        if (confirm(`'${targetName}' hat mehrere Termine. Tausch mit dem nächsten am ${targetSlot.date}?\n\n${sourceName || "Leer"} (${sourceSlot.date})\n↔\n${targetName} (${targetSlot.date})`)) {
-            sourceSlot.presenter = targetName;
-            targetSlot.presenter = sourceName;
-            sourceSlot.forgotten = false;
-            targetSlot.forgotten = false;
-
-            saveSchedule();
-            renderSchedule();
-        } else {
-            renderSchedule();
-        }
+        // Case 3: Multiple target slots -> Show Selection Modal
+        openSwapSelectionModal(sourceIndex, targetName, allTargetSlots);
     }
 };
+
+window.openSwapSelectionModal = function (sourceIndex, targetName, targetSlots) {
+    const modal = document.getElementById('swap-selection-modal');
+    const title = document.getElementById('swap-modal-title');
+    const desc = document.getElementById('swap-modal-desc');
+    const list = document.getElementById('swap-options-list');
+    const sourceSlot = currentSchedule[sourceIndex];
+
+    title.textContent = `Tausch mit ${targetName}`;
+    desc.textContent = `Wähle den Termin von ${targetName}, der mit dem Termin am ${sourceSlot.date} getauscht werden soll:`;
+    list.innerHTML = '';
+
+    targetSlots.forEach(({ slot, idx }) => {
+        const btn = document.createElement('button');
+        btn.className = 'edit-btn';
+        btn.style.display = 'block';
+        btn.style.width = '100%';
+        btn.style.marginBottom = '10px';
+        btn.style.textAlign = 'left';
+        btn.style.background = '#f8f9fa';
+        btn.style.color = '#333';
+        btn.style.border = '1px solid #ddd';
+        btn.style.padding = '10px';
+
+        const dateStr = new Date(slot.date).toLocaleDateString('de-DE');
+        btn.innerHTML = `<strong>${dateStr}</strong><br><small>${slot.topic || "(Kein Thema)"}</small>`;
+
+        btn.onclick = () => {
+            executeSwap(sourceIndex, idx);
+            closeSwapSelectionModal();
+        };
+        list.appendChild(btn);
+    });
+
+    modal.classList.remove('hidden');
+}
+
+window.closeSwapSelectionModal = function () {
+    const modal = document.getElementById('swap-selection-modal');
+    if (modal) modal.classList.add('hidden');
+    renderSchedule(); // Reset dropdowns
+}
+
+window.executeSwap = function (sourceIndex, targetIndex) {
+    const sourceSlot = currentSchedule[sourceIndex];
+    const targetSlot = currentSchedule[targetIndex];
+
+    const sourceName = sourceSlot.presenter;
+    const targetName = targetSlot.presenter;
+
+    sourceSlot.presenter = targetName;
+    targetSlot.presenter = sourceName;
+
+    sourceSlot.forgotten = false;
+    targetSlot.forgotten = false;
+
+    saveSchedule();
+    renderSchedule();
+}
 
 // Start Helper: sortEmployeesByName
 function sortEmployeesByName(a, b) {
@@ -752,6 +797,9 @@ window.autoDistribute = function () {
     if (!currentSchedule || !currentEmployees) return;
     if (!confirm("Automatische Verteilung starten?\n\n- Montags: Assistenzärzte\n- Mittwochs: Oberärzte\n- Alphabetisch fortlaufend ab letztem Eintrag.\n\nNur leere Slots bis zum Ende des NÄCHSTEN Quartals werden gefüllt.\nACHTUNG: Alle Termine NACH dem nächsten Quartal werden gelöscht!")) return;
 
+    const todayDate = new Date();
+    const todayStr = todayDate.toISOString().split('T')[0];
+
     // Filter active employees
     const activeEmployees = currentEmployees.filter(e => e.active);
     const oaList = activeEmployees.filter(e => e.isOberarzt).sort(sortEmployeesByName);
@@ -766,19 +814,18 @@ window.autoDistribute = function () {
     let lastOAName = null;
     let lastAssistName = null;
 
-    // We assume chronological order in currentSchedule
-    // Find the very last assignment in the ENTIRE schedule (past or future) to determine sequence
-    // Note: The user wants to continue *after the last employee already distributed in the schedule*.
-    // So we iterate backwards to find the last occurrence of someone from each list.
+    // We only look for the last assignments UP TO today to determine where to start the sequence.
+    // This prevents future manual entries from "pulling" the sequence too far ahead.
 
     for (let i = currentSchedule.length - 1; i >= 0; i--) {
         const slot = currentSchedule[i];
-        if (slot.presenter && slot.presenter !== "") {
-            if (!lastOAName && oaList.find(e => e.name === slot.presenter)) {
-                lastOAName = slot.presenter;
+        if (slot.date <= todayStr && slot.presenter && slot.presenter.trim() !== "" && !slot.isNachholtermin) {
+            const trimmedPresenter = slot.presenter.trim();
+            if (!lastOAName && oaList.find(e => e.name.trim() === trimmedPresenter)) {
+                lastOAName = trimmedPresenter;
             }
-            if (!lastAssistName && assistList.find(e => e.name === slot.presenter)) {
-                lastAssistName = slot.presenter;
+            if (!lastAssistName && assistList.find(e => e.name.trim() === trimmedPresenter)) {
+                lastAssistName = trimmedPresenter;
             }
         }
         if (lastOAName && lastAssistName) break;
@@ -786,83 +833,79 @@ window.autoDistribute = function () {
 
     let nextOAIndex = 0;
     if (lastOAName) {
-        const idx = oaList.findIndex(e => e.name === lastOAName);
+        const idx = oaList.findIndex(e => e.name.trim() === lastOAName);
         if (idx !== -1) nextOAIndex = (idx + 1) % oaList.length;
     }
 
     let nextAssistIndex = 0;
     if (lastAssistName) {
-        const idx = assistList.findIndex(e => e.name === lastAssistName);
+        const idx = assistList.findIndex(e => e.name.trim() === lastAssistName);
         if (idx !== -1) nextAssistIndex = (idx + 1) % assistList.length;
     }
 
     // Determine End of Current Quarter (Fixed Logic)
-    const todayDate = new Date();
-    const currentMonth = todayDate.getMonth(); // 0-11
-    const currentYear = todayDate.getFullYear();
-
-    // Quarter mapping:
-    // Q1 (Jan-Mar): Ends March 31
-    // Q2 (Apr-Jun): Ends June 30
-    // Q3 (Jul-Sep): Ends Sept 30
-    // Q4 (Oct-Dec): Ends Dec 31
-
-    // 1. Find end month of CURRENT quarter
+    // ... (rest of the date logic remains same)
+    const currentMonth = todayDate.getMonth();
+    const currentYearFixed = todayDate.getFullYear();
     let qEndMonth;
-    if (currentMonth <= 2) qEndMonth = 2;       // Q1: March
-    else if (currentMonth <= 5) qEndMonth = 5;  // Q2: June
-    else if (currentMonth <= 8) qEndMonth = 8;  // Q3: Sept
-    else qEndMonth = 11;                        // Q4: Dec
-
-    // 2. Add 3 months to get NEXT quarter end month
+    if (currentMonth <= 2) qEndMonth = 2;
+    else if (currentMonth <= 5) qEndMonth = 5;
+    else if (currentMonth <= 8) qEndMonth = 8;
+    else qEndMonth = 11;
     let nextQEndMonth = qEndMonth + 3;
-
-    // 3. Handle year wrap-around
+    let finalYear = currentYearFixed;
     if (nextQEndMonth > 11) {
         nextQEndMonth -= 12;
-        currentYear += 1;
+        finalYear += 1;
     }
-
-    // 4. Determine last day of that month (year, month + 1, 0)
-    const limitDate = new Date(currentYear, nextQEndMonth + 1, 0, 23, 59, 59);
+    const limitDate = new Date(finalYear, nextQEndMonth + 1, 0, 23, 59, 59);
 
     // 3. Distribute
     let filledCount = 0;
     let clearedCount = 0;
-    const todayStr = todayDate.toISOString().split('T')[0];
 
     currentSchedule.forEach(slot => {
         const slotDateStr = slot.date;
         const slotDateObj = new Date(slotDateStr);
 
-        // Logic split:
-        // 1. If slot is in the past (< today): Ignore (don't change history)
-        // 2. If slot is today or future:
-        //    a. If <= quarterEndDate: Distribute if empty
-        //    b. If > quarterEndDate: Clear (as requested)
-
         if (slotDateStr >= todayStr) {
             if (slotDateObj <= limitDate) {
-                // Distribute Logic for Current + Next Quarter
-                // Only fill if empty and not holiday
-                if ((!slot.presenter || slot.presenter === "") && !checkHoliday(slotDateObj)) {
-                    const day = slotDateObj.getDay(); // 1 = Mon, 3 = Wed
+                if (checkHoliday(slotDateObj)) return;
 
-                    if (day === 1 && assistList.length > 0) {
-                        // Monday -> Assistenzarzt
+                const day = slotDateObj.getDay();
+                const isManual = (slot.presenter && slot.presenter.trim() !== "");
+
+                if (day === 1 && assistList.length > 0) {
+                    // Monday -> Assistenzarzt
+                    if (!isManual) {
                         slot.presenter = assistList[nextAssistIndex].name;
+                        filledCount++;
+                    } else if (!slot.isNachholtermin) {
+                        // If manually filled (and not a catch-up), sync the sequence
+                        const mIdx = assistList.findIndex(e => e.name.trim() === slot.presenter.trim());
+                        if (mIdx !== -1) nextAssistIndex = (mIdx + 1) % assistList.length;
+                        return; // Done with this slot
+                    }
+                    if (!slot.isNachholtermin || !isManual) {
                         nextAssistIndex = (nextAssistIndex + 1) % assistList.length;
-                        filledCount++;
-                    } else if (day === 3 && oaList.length > 0) {
-                        // Wednesday -> Oberarzt
+                    }
+                } else if (day === 3 && oaList.length > 0) {
+                    // Wednesday -> Oberarzt
+                    if (!isManual) {
                         slot.presenter = oaList[nextOAIndex].name;
-                        nextOAIndex = (nextOAIndex + 1) % oaList.length;
                         filledCount++;
+                    } else if (!slot.isNachholtermin) {
+                        // Sync sequence for manual entries
+                        const mIdx = oaList.findIndex(e => e.name.trim() === slot.presenter.trim());
+                        if (mIdx !== -1) nextOAIndex = (mIdx + 1) % oaList.length;
+                        return;
+                    }
+                    if (!slot.isNachholtermin || !isManual) {
+                        nextOAIndex = (nextOAIndex + 1) % oaList.length;
                     }
                 }
             } else {
                 // Clear Logic for Future Quarters
-                // Clear everything to ensure "freibleiben"
                 if (slot.presenter !== "" || slot.topic !== "" || slot.forgotten) {
                     slot.presenter = "";
                     slot.topic = "";
