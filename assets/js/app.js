@@ -1,8 +1,10 @@
 const SCHEDULE_BIN_ID = "699332e2ae596e708f2f7434"; // Schedule
 const EMPLOYEES_BIN_ID = "699333dcd0ea881f40bf132f"; // Employees
+const DISTRIBUTION_BIN_ID = "699c40edae596e708f42284d"; // Distribution
 
 let currentSchedule = [];
 let currentEmployees = [];
+let currentDistribution = [];
 let isAdmin = false;
 let apiKey = null;
 
@@ -62,6 +64,7 @@ async function init() {
     // Load data
     await loadSchedule();
     await loadEmployees();
+    await loadDistribution();
 
     // Ensure UI reflects admin state AFTER loading
     updateAdminUI();
@@ -105,6 +108,7 @@ async function loadEmployees() {
             console.warn("Mitarbeiter-Daten sind kein Array. Initialisiere neu.", currentEmployees);
             currentEmployees = [];
         }
+        syncEmployeeIDs();
         renderEmployees();
         renderSchedule(); // Re-render schedule to populate dropdowns
     } catch (e) {
@@ -112,6 +116,128 @@ async function loadEmployees() {
         currentEmployees = []; // Fallback
         renderEmployees();
     }
+}
+
+async function loadDistribution() {
+    try {
+        currentDistribution = await fetchData(DISTRIBUTION_BIN_ID);
+        if (!Array.isArray(currentDistribution)) {
+            console.warn("Distribution-Daten sind kein Array.", currentDistribution);
+            currentDistribution = [];
+        }
+        syncEmployeeIDs();
+        renderDistribution();
+    } catch (e) {
+        console.warn("Fehler beim Laden der Monatsverteilung:", e);
+        currentDistribution = [];
+        renderDistribution();
+    }
+}
+
+function syncEmployeeIDs() {
+    console.log("syncEmployeeIDs called", {
+        empCount: currentEmployees.length,
+        distCount: currentDistribution.length
+    });
+
+    if (!currentEmployees.length || !currentDistribution.length) return;
+
+    let changed = false;
+    const exclusions = ["93", "elternzeit", "donaustauf", "kelheim", "med1", "med3"];
+
+    // 1. Update IDs for existing employees
+    currentEmployees.forEach(emp => {
+        if (!emp.name) return;
+
+        // Find if this employee has an ID in the distribution data
+        // Search by name (en) - trim and case-insensitive
+        const cleanEmpName = emp.name.trim().toLowerCase();
+
+        // Exact match first
+        let match = currentDistribution.find(d => d.en && d.en.trim().toLowerCase() === cleanEmpName);
+
+        // Fallback: Check if distribution name matches the employee's last name
+        if (!match) {
+            const parts = emp.name.trim().split(/\s+/);
+            if (parts.length > 0) {
+                const lastName = parts[parts.length - 1].toLowerCase();
+                match = currentDistribution.find(d => d.en && d.en.trim().toLowerCase() === lastName);
+            }
+        }
+
+        if (match) {
+            if (match.ei && (!emp.id || emp.id === "")) {
+                emp.id = match.ei;
+                changed = true;
+                console.log(`Assigned ID ${match.ei} to existing employee ${emp.name}`);
+            }
+        }
+    });
+
+    // 2. Discover new employees
+    currentDistribution.forEach(d => {
+        if (!d.en || !d.ei) return;
+
+        // Skip if this specific entry is in an excluded area
+        const area = (d.bi || "").toLowerCase();
+        if (exclusions.some(ex => area.includes(ex))) return;
+
+        const distId = d.ei.trim();
+        const distName = d.en.trim();
+
+        // Check if already exists in currentEmployees
+        const exists = currentEmployees.find(emp => {
+            if (emp.id === distId) return true;
+
+            const cleanEmpName = (emp.name || "").trim().toLowerCase();
+            const cleanDistName = distName.toLowerCase();
+            if (cleanEmpName === cleanDistName) return true;
+
+            const empParts = cleanEmpName.split(/\s+/);
+            if (empParts.length > 0 && empParts[empParts.length - 1] === cleanDistName) return true;
+
+            return false;
+        });
+
+        if (!exists) {
+            console.log(`New employee discovered: ${distName} (${distId}) in area ${d.bi}`);
+            currentEmployees.push({
+                id: distId,
+                name: distName,
+                email: "@",
+                active: true,
+                isOberarzt: false
+            });
+            changed = true;
+        }
+    });
+
+    if (changed) {
+        console.log("Sync complete, table updated.");
+        renderEmployees();
+    } else {
+        console.log("Sync complete, no changes.");
+    }
+}
+
+function renderDistribution() {
+    const table = document.getElementById('distribution-table');
+    const tbody = document.getElementById('distribution-body');
+    if (!tbody || !table) return;
+
+    table.classList.remove('hidden');
+    tbody.innerHTML = '';
+
+    currentDistribution.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.mi || ''}</td>
+            <td>${item.bi || ''}</td>
+            <td>${item.ei || ''}</td>
+            <td>${item.en || ''}</td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 
 function showError(msg) {
@@ -452,6 +578,7 @@ function renderEmployees() {
     currentEmployees.forEach((emp, index) => {
         const row = document.createElement('tr');
 
+        let idCell = emp.id || '';
         let nameCell = emp.name;
         let emailCell = emp.email;
         let oaCell = emp.isOberarzt ? "Ja" : "Nein";
@@ -459,6 +586,7 @@ function renderEmployees() {
         let actionCell = "";
 
         if (isAdmin) {
+            idCell = `<input class="edit-field" value="${emp.id || ''}" onchange="updateEmployee(${index}, 'id', this.value)" style="width: 90px;">`;
             nameCell = `<input class="edit-field" value="${emp.name || ''}" onchange="updateEmployee(${index}, 'name', this.value)">`;
             emailCell = `<input class="edit-field" value="${emp.email || ''}" onchange="updateEmployee(${index}, 'email', this.value)">`;
             oaCell = `<input type="checkbox" ${emp.isOberarzt ? 'checked' : ''} onchange="updateEmployee(${index}, 'isOberarzt', this.checked)">`;
@@ -468,6 +596,7 @@ function renderEmployees() {
         }
 
         row.innerHTML = `
+            <td>${idCell}</td>
             <td>${nameCell}</td>
             <td>${emailCell}</td>
             <td>${oaCell}</td>
@@ -504,6 +633,13 @@ function updateAdminUI() {
     if (bulkImportSection) {
         if (isAdmin) bulkImportSection.classList.remove('hidden');
         else bulkImportSection.classList.add('hidden');
+    }
+
+    // Toggle Distribution Tab Button
+    const distributionTabBtn = document.querySelector('button[data-tab="distribution"]');
+    if (distributionTabBtn) {
+        if (isAdmin) distributionTabBtn.classList.remove('hidden');
+        else distributionTabBtn.classList.add('hidden');
     }
 }
 
@@ -581,7 +717,7 @@ window.updateEmployee = function (index, field, value) {
 
 window.addEmployee = function () {
     if (!currentEmployees) currentEmployees = [];
-    currentEmployees.push({ name: "Neu", email: "@", active: true, isOberarzt: false });
+    currentEmployees.push({ id: "", name: "Neu", email: "@", active: true, isOberarzt: false });
     renderEmployees();
     renderSchedule(); // Update dropdowns immediately
 }
@@ -601,7 +737,10 @@ function setupTabs() {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
 
-        const activeBtn = document.querySelector(`button[onclick="switchTab('${tabName}')"]`);
+        // Find active button - compatibility with both structures
+        let activeBtn = document.querySelector(`button[data-tab="${tabName}"]`);
+        if (!activeBtn) activeBtn = document.querySelector(`button[onclick="switchTab('${tabName}')"]`);
+
         if (activeBtn) activeBtn.classList.add('active');
 
         const activeContent = document.getElementById(`tab-${tabName}`);
@@ -647,8 +786,10 @@ window.checkLogin = async function () {
             // Reload data with new key
             await loadSchedule();
             await loadEmployees();
+            await loadDistribution();
             renderSchedule();
             renderEmployees();
+            renderDistribution();
             updateAdminUI();
 
             // Update Print Header "Stand" date
@@ -793,6 +934,28 @@ function sortEmployeesByName(a, b) {
 }
 // End Helper
 
+// --- Distribution Helper ---
+function isEmployeeExcluded(employeeId, dateObj) {
+    if (!employeeId || !currentDistribution || !Array.isArray(currentDistribution)) return false;
+
+    // Normalise date to YYYY_MM
+    const year = dateObj.getFullYear();
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+    const miMatch = `${year}_${month}`;
+
+    const exclusions = ["93", "elternzeit", "donaustauf", "kelheim", "med1", "med3"];
+
+    // Find entries for this employee ID in this month
+    const entries = currentDistribution.filter(d => d.ei === employeeId && d.mi === miMatch);
+
+    // Check if any entry matches the exclusion criteria
+    return entries.some(d => {
+        if (!d.bi) return false;
+        const area = d.bi.toLowerCase();
+        return exclusions.some(ex => area.includes(ex));
+    });
+}
+
 window.autoDistribute = function () {
     if (!currentSchedule || !currentEmployees) return;
     if (!confirm("Automatische Verteilung starten?\n\n- Montags: Assistenzärzte\n- Mittwochs: Oberärzte\n- Alphabetisch fortlaufend ab letztem Eintrag.\n\nNur leere Slots bis zum Ende des NÄCHSTEN Quartals werden gefüllt.\nACHTUNG: Alle Termine NACH dem nächsten Quartal werden gelöscht!")) return;
@@ -878,8 +1041,28 @@ window.autoDistribute = function () {
                 if (day === 1 && assistList.length > 0) {
                     // Monday -> Assistenzarzt
                     if (!isManual) {
-                        slot.presenter = assistList[nextAssistIndex].name;
-                        filledCount++;
+                        // Find next available assistent who is NOT busy
+                        let foundAvailable = false;
+                        let startIndex = nextAssistIndex;
+                        let loopCount = 0;
+
+                        while (loopCount < assistList.length) {
+                            const candidate = assistList[nextAssistIndex];
+                            if (!isEmployeeExcluded(candidate.id, slotDateObj)) {
+                                slot.presenter = candidate.name;
+                                filledCount++;
+                                foundAvailable = true;
+                                break;
+                            }
+                            // Move to next candidate
+                            nextAssistIndex = (nextAssistIndex + 1) % assistList.length;
+                            loopCount++;
+                        }
+
+                        if (!foundAvailable) {
+                            console.warn(`Kein verfügbarer Assistenzarzt für den ${slotDateStr} gefunden (alle busy).`);
+                            // Slot remains empty
+                        }
                     } else if (!slot.isNachholtermin) {
                         // If manually filled (and not a catch-up), sync the sequence
                         const mIdx = assistList.findIndex(e => e.name.trim() === slot.presenter.trim());
@@ -892,8 +1075,27 @@ window.autoDistribute = function () {
                 } else if (day === 3 && oaList.length > 0) {
                     // Wednesday -> Oberarzt
                     if (!isManual) {
-                        slot.presenter = oaList[nextOAIndex].name;
-                        filledCount++;
+                        // Find next available OA who is NOT busy
+                        let foundAvailable = false;
+                        let startIndex = nextOAIndex;
+                        let loopCount = 0;
+
+                        while (loopCount < oaList.length) {
+                            const candidate = oaList[nextOAIndex];
+                            if (!isEmployeeExcluded(candidate.id, slotDateObj)) {
+                                slot.presenter = candidate.name;
+                                filledCount++;
+                                foundAvailable = true;
+                                break;
+                            }
+                            // Move to next candidate
+                            nextOAIndex = (nextOAIndex + 1) % oaList.length;
+                            loopCount++;
+                        }
+
+                        if (!foundAvailable) {
+                            console.warn(`Kein verfügbarer Oberarzt für den ${slotDateStr} gefunden (alle busy).`);
+                        }
                     } else if (!slot.isNachholtermin) {
                         // Sync sequence for manual entries
                         const mIdx = oaList.findIndex(e => e.name.trim() === slot.presenter.trim());

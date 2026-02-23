@@ -141,6 +141,7 @@
         <div class="tabs">
             <button class="tab-btn active" data-tab="schedule">Terminplan</button>
             <button class="tab-btn" data-tab="employees">Mitarbeiter</button>
+            <button class="tab-btn hidden" data-tab="distribution">Monatsverteilung</button>
         </div>
 
         <main>
@@ -224,6 +225,7 @@
                 <table id="employee-table" class="hidden">
                     <thead>
                         <tr>
+                            <th class="col-id">ID</th>
                             <th>Name</th>
                             <th>Email</th>
                             <th>OA</th>
@@ -239,6 +241,23 @@
                 </table>
 
                 <button id="add-employee-btn" class="hidden" onclick="addEmployee()">+ Neuer Mitarbeiter</button>
+            </div>
+
+            <!-- Distribution Tab -->
+            <div id="tab-distribution" class="tab-content hidden">
+                <table id="distribution-table" class="hidden">
+                    <thead>
+                        <tr>
+                            <th>Monat</th>
+                            <th>Bereich</th>
+                            <th>Mitarbeiter ID</th>
+                            <th>Mitarbeiter Name</th>
+                        </tr>
+                    </thead>
+                    <tbody id="distribution-body">
+                        <!-- Rows will be inserted here -->
+                    </tbody>
+                </table>
             </div>
         </main>
 

@@ -177,6 +177,10 @@ tr:hover {
     white-space: nowrap;
 }
 
+.col-id {
+    width: 100px;
+}
+
 .center-text {
     text-align: center;
 }
