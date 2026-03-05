@@ -304,7 +304,7 @@ function renderSchedule() {
         let isHoliday = false;
         let countCell = "";
         let forgottenCell = "";
-        let nachholCell = "";
+        let ersatzCell = "";
         let combinedStatsCell = "";
 
         if (holidayName) {
@@ -314,7 +314,7 @@ function renderSchedule() {
             topicCell = "Kein Journal Watch";
             combinedStatsCell = "-";
             forgottenCell = "-";
-            nachholCell = "-";
+            ersatzCell = "-";
         } else {
             const count = (slot.presenter && stats[slot.presenter]) ? stats[slot.presenter] : 0;
             const fCount = (slot.presenter && forgottenStats[slot.presenter]) ? forgottenStats[slot.presenter] : 0;
@@ -334,12 +334,12 @@ function renderSchedule() {
 
             if (slot.forgotten) row.classList.add('forgotten-row');
 
-            // Nachholtermin Logic
+            // Ersatztermin Logic
             if (isAdmin) {
                 const checked = slot.isNachholtermin ? 'checked' : '';
-                nachholCell = `<input type="checkbox" ${checked} onchange="toggleNachholtermin(${index}, this.checked)">`;
+                ersatzCell = `<input type="checkbox" ${checked} onchange="toggleErsatztermin(${index}, this.checked)">`;
             } else {
-                nachholCell = slot.isNachholtermin ? "Ja" : "";
+                ersatzCell = slot.isNachholtermin ? "Ja" : "";
             }
 
             // specific check for OA
@@ -391,7 +391,7 @@ function renderSchedule() {
             <td>${presenterCell}</td>
             <td class="center-text stats-tooltip">${combinedStatsCell}</td>
             <td class="center-text">${forgottenCell}</td>
-            <td class="center-text">${nachholCell}</td>
+            <td class="center-text">${ersatzCell}</td>
             <td class="center-text">
                 ${isAdmin ? (() => {
                 if (slot.forgotten) return '-';
@@ -514,7 +514,7 @@ function checkHoliday(dateObj) {
 
     return null;
 }
-window.toggleNachholtermin = function (index, isChecked) {
+window.toggleErsatztermin = function (index, isChecked) {
     currentSchedule[index].isNachholtermin = isChecked;
     renderSchedule();
 }
@@ -547,8 +547,8 @@ window.toggleForgotten = function (index, isChecked) {
                 pDate.getDay() === targetDay) {
 
                 potential.presenter = presenter;
-                potential.topic = `Nachholtermin für ${oldDate}`;
-                potential.isNachholtermin = true; // Mark as Nachholtermin
+                potential.topic = "Ersatztermin";
+                potential.isNachholtermin = true; // Mark as Ersatztermin
                 found = true;
                 alert(`${presenter} wurde automatisch auf den ${pDate.toLocaleDateString('de-DE')} verschoben.`);
                 break;
