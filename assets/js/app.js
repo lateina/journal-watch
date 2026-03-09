@@ -7,6 +7,14 @@ let currentEmployees = [];
 let currentDistribution = [];
 let isAdmin = false;
 let apiKey = null;
+let hasUnsavedChanges = false;
+
+window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
 
 function setupEventListeners() {
     // Tabs
@@ -504,11 +512,13 @@ function checkHoliday(dateObj) {
 }
 window.toggleErsatztermin = function (index, isChecked) {
     currentSchedule[index].isNachholtermin = isChecked;
+    hasUnsavedChanges = true;
     renderSchedule();
 }
 window.toggleForgotten = function (index, isChecked) {
     const slot = currentSchedule[index];
     slot.forgotten = isChecked;
+    hasUnsavedChanges = true;
 
     if (isChecked) {
         // Find next free slot
@@ -679,6 +689,7 @@ window.parseEmployeeInput = function () {
     });
 
     if (addedCount > 0) {
+        hasUnsavedChanges = true;
         renderEmployees();
         renderSchedule(); // Update dropdowns
         alert(`${addedCount} Mitarbeiter hinzugefügt.\nBitte "Speichern" nicht vergessen!`);
@@ -692,11 +703,13 @@ window.parseEmployeeInput = function () {
 
 window.updateSlot = function (index, field, value) {
     currentSchedule[index][field] = value;
+    hasUnsavedChanges = true;
     if (field === 'presenter') renderSchedule(); // Re-calc stats immediately
 }
 
 window.updateEmployee = function (index, field, value) {
     currentEmployees[index][field] = value;
+    hasUnsavedChanges = true;
     // If name or active status changes, we must re-render the schedule dropdowns
     if (field === 'name' || field === 'active') {
         renderSchedule();
@@ -706,6 +719,7 @@ window.updateEmployee = function (index, field, value) {
 window.addEmployee = function () {
     if (!currentEmployees) currentEmployees = [];
     currentEmployees.push({ id: "", name: "Neu", email: "@", active: true, isOberarzt: false });
+    hasUnsavedChanges = true;
     renderEmployees();
     renderSchedule(); // Update dropdowns immediately
 }
@@ -713,6 +727,7 @@ window.addEmployee = function () {
 window.deleteEmployee = function (index) {
     if (confirm("Mitarbeiter wirklich löschen?")) {
         currentEmployees.splice(index, 1);
+        hasUnsavedChanges = true;
         renderEmployees();
         renderSchedule(); // Update dropdowns immediately
     }
@@ -898,6 +913,7 @@ window.executeSwap = function (sourceIndex, targetIndex) {
     sourceSlot.forgotten = false;
     targetSlot.forgotten = false;
 
+    hasUnsavedChanges = true;
     saveSchedule();
     renderSchedule();
 }
@@ -1106,6 +1122,7 @@ window.autoDistribute = function () {
         }
     });
 
+    if (filledCount > 0 || clearedCount > 0) hasUnsavedChanges = true;
     renderSchedule();
 
     if (filledCount > 0 || clearedCount > 0) {
@@ -1250,6 +1267,7 @@ window.saveSchedule = async function () {
     try {
         await saveData(SCHEDULE_BIN_ID, currentSchedule);
         await saveData(EMPLOYEES_BIN_ID, currentEmployees);
+        hasUnsavedChanges = false;
         alert("Alle Änderungen gespeichert!");
     } catch (e) {
         alert("Fehler beim Speichern: " + e.message);
