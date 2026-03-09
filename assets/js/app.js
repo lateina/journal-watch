@@ -445,35 +445,19 @@ function renderSchedule() {
     }
 }
 
-// --- Helper: Holidays 2026 (Bavaria) ---
+// --- Helper: Holidays (Bavaria, 2026 + 2027) ---
 function checkHoliday(dateObj) {
-    // Christmas Holidays 2026/2027: Dec 24, 2026 - Jan 8, 2027
-    // Check this FIRST to allow 2027 dates in this range
     const time = dateObj.getTime();
-    const xmasStart = new Date('2026-12-24').getTime();
-    const xmasEnd = new Date('2027-01-08').getTime();
-
-    if (time >= xmasStart && time <= xmasEnd) {
-        return "Weihnachtsferien";
-    }
-
     const year = dateObj.getFullYear();
-    if (year !== 2026) return null; // Logic focused on 2026 for now as requested
-
     const month = dateObj.getMonth() + 1; // 1-12
     const day = dateObj.getDate();
     const dateStr = `${day.toString().padStart(2, '0')}.${month.toString().padStart(2, '0')}.`;
 
-    // Fixed Holidays 2026
-    const holidays = {
+    // Fixed public holidays (same date every year, Bavaria)
+    const fixedHolidays = {
         "01.01.": "Neujahr",
         "06.01.": "Heilige Drei Könige",
-        "03.04.": "Karfreitag",
-        "06.04.": "Ostermontag",
         "01.05.": "Tag der Arbeit",
-        "14.05.": "Christi Himmelfahrt",
-        "25.05.": "Pfingstmontag",
-        "04.06.": "Fronleichnam",
         "15.08.": "Mariä Himmelfahrt",
         "03.10.": "Tag der Deutschen Einheit",
         "01.11.": "Allerheiligen",
@@ -481,35 +465,39 @@ function checkHoliday(dateObj) {
         "26.12.": "2. Weihnachtsfeiertag"
     };
 
-    if (holidays[dateStr]) return holidays[dateStr];
+    // Moveable feasts per year (Bavaria)
+    const moveableFeastsByYear = {
+        2026: {
+            "03.04.": "Karfreitag",
+            "06.04.": "Ostermontag",
+            "14.05.": "Christi Himmelfahrt",
+            "25.05.": "Pfingstmontag",
+            "04.06.": "Fronleichnam",
+        },
+        2027: {
+            "26.03.": "Karfreitag",
+            "29.03.": "Ostermontag",
+            "06.05.": "Christi Himmelfahrt",
+            "17.05.": "Pfingstmontag",
+            "27.05.": "Fronleichnam",
+        }
+    };
 
-    // Summer Holidays 2026: Aug 3 - Sep 14
-    // Month is 0-indexed in JS Date, but I used 1-based above.
-    // Let's use numeric comparison for ranges.
+    const match = fixedHolidays[dateStr] || (moveableFeastsByYear[year] && moveableFeastsByYear[year][dateStr]);
+    if (match) return match;
 
-    const summerStart = new Date('2026-08-03').getTime();
-    const summerEnd = new Date('2026-09-14').getTime();
+    // Date ranges (vacations, congresses)
+    const ranges = [
+        { start: '2026-08-03', end: '2026-09-14', label: 'Sommerferien' },
+        { start: '2026-12-24', end: '2027-01-08', label: 'Weihnachtsferien' },
+        { start: '2026-04-08', end: '2026-04-11', label: 'DGK Kongress' },
+        { start: '2026-08-27', end: '2026-08-31', label: 'ESC Kongress' },
+    ];
 
-    if (time >= summerStart && time <= summerEnd) {
-        return "Sommerferien";
-    }
-
-
-
-    // DGK Kongress 2026: Apr 8 - Apr 11
-    const dgkStart = new Date('2026-04-08').getTime();
-    const dgkEnd = new Date('2026-04-11').getTime();
-
-    if (time >= dgkStart && time <= dgkEnd) {
-        return "DGK Kongress";
-    }
-
-    // ESC Kongress 2026: Aug 27 - Aug 31
-    const escStart = new Date('2026-08-27').getTime();
-    const escEnd = new Date('2026-08-31').getTime();
-
-    if (time >= escStart && time <= escEnd) {
-        return "ESC Kongress";
+    for (const range of ranges) {
+        if (time >= new Date(range.start).getTime() && time <= new Date(range.end).getTime()) {
+            return range.label;
+        }
     }
 
     return null;

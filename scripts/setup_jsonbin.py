@@ -1,8 +1,9 @@
 import json
+import os
 import urllib.request
 import urllib.error
 
-API_KEY = "$2a$10$5f5WR8jrQAQp2TgNWGvWb.2tp/RA1ZzQzMv3SY5uwYnm5oqz66yxa"
+API_KEY = os.environ.get("JSONBIN_API_KEY", "")
 BASE_URL = "https://api.jsonbin.io/v3/b"
 
 def create_bin(name, data, private=True):
@@ -36,6 +37,9 @@ def load_json(path):
         return json.load(f)
 
 if __name__ == "__main__":
+    if not API_KEY:
+        print("Fehler: Umgebungsvariable JSONBIN_API_KEY nicht gesetzt.")
+        exit(1)
     try:
         schedule = load_json("data/schedule.json")
         employees = load_json("data/employees.json")
