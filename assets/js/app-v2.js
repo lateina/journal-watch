@@ -1,3 +1,4 @@
+alert("JOURNAL WATCH V2.2 GELADEN");
 // JSONBin Bins for Distribution (Shared with Urlaubsplaner V2)
 const DISTRIBUTION_BIN_ID = "699c40edae596e708f42284d";
 
