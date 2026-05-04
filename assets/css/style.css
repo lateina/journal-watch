@@ -297,26 +297,107 @@ input:checked + .slider:before { transform: translateX(20px); }
 @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
-/* Print styles adjusted */
+/* Print styles - Reverted to original look */
 @media print {
-    body { background: white; margin: 0; }
-    .container { padding: 0; max-width: none; }
-    .main-card { box-shadow: none; border: none; padding: 0; }
-    header, .tabs, .no-print { display: none !important; }
-    table { border: 1px solid #000; }
-    th, td { border: 1px solid #000; font-size: 9pt; padding: 4px; }
+    @page {
+        margin: 0;
+        size: auto;
+    }
 
-    /* Show Print-only elements */
+    body {
+        background: white;
+        margin: 15mm 20mm !important;
+        padding: 0 !important;
+    }
+
+    .container {
+        padding: 0;
+        max-width: none;
+    }
+
+    .main-card {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        background: white;
+    }
+
+    header, .tabs, .no-print, #admin-controls, footer, .btn {
+        display: none !important;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        border: none;
+        margin: 0;
+    }
+
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+
     .print-header-row, .print-footer-row {
         display: table-row !important;
     }
-    
+
+    .print-header-row th, .print-footer-row td {
+        border: none !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    #print-header-content {
+        padding-bottom: 5mm;
+        text-align: left;
+    }
+
     .print-header-logos {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 10px;
+        align-items: flex-start;
+        margin-bottom: 5mm;
     }
-    
-    .print-logo-left { height: 40px; }
-    .print-logo-right { height: 35px; }
+
+    .print-logo-left { height: 18mm; width: auto; }
+    .print-logo-right { height: 14mm; width: auto; }
+
+    .print-header-info {
+        text-align: right;
+        font-size: 8pt;
+        line-height: 1.2;
+        margin-bottom: 5mm;
+    }
+
+    .print-header-title {
+        text-align: center;
+        margin-bottom: 5mm;
+    }
+
+    .print-header-title h1 {
+        font-size: 16pt;
+        margin: 0;
+        letter-spacing: 2px;
+        color: black;
+        -webkit-text-fill-color: black;
+    }
+
+    .print-header-title h2 {
+        font-size: 12pt;
+        margin: 2mm 0;
+        font-weight: normal;
+    }
+
+    .print-header-title p {
+        font-size: 10pt;
+        font-weight: bold;
+        margin: 2mm 0 0 0;
+    }
+
+    th, td {
+        border: 1px solid #000;
+        color: #000;
+        padding: 5px;
+        font-size: 10pt;
+        text-align: left;
+    }
 }
