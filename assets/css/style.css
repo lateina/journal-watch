@@ -280,6 +280,11 @@ input:checked + .slider:before { transform: translateX(20px); }
 .hidden { display: none !important; }
 .center-text { text-align: center; }
 
+/* Hide Print-only elements on screen */
+.print-header-row, .print-footer-row {
+    display: none !important;
+}
+
 /* Tooltip Custom Fix */
 .stats-tooltip::after, .custom-tooltip::after {
     background: #1e293b !important;
@@ -300,4 +305,18 @@ input:checked + .slider:before { transform: translateX(20px); }
     header, .tabs, .no-print { display: none !important; }
     table { border: 1px solid #000; }
     th, td { border: 1px solid #000; font-size: 9pt; padding: 4px; }
+
+    /* Show Print-only elements */
+    .print-header-row, .print-footer-row {
+        display: table-row !important;
+    }
+    
+    .print-header-logos {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    
+    .print-logo-left { height: 40px; }
+    .print-logo-right { height: 35px; }
 }
