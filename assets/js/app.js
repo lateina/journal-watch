@@ -116,7 +116,7 @@ async function loadEmployees() {
                 ...emp,
                 // Ensure 'active' and 'isOberarzt' flags exist as expected by JW UI
                 active: emp.active !== false,
-                isOberarzt: emp.role === 'Oberarzt' || emp.isOberarzt === true
+                isOberarzt: emp.role === 'Oberarzt' || emp.role === 'FOA' || emp.role === 'Funktionsoberarzt' || emp.isOberarzt === true
             }));
         } else {
             console.warn("No employee config found in Firestore.");
