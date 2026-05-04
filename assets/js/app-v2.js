@@ -102,11 +102,15 @@ async function loadEmployees() {
         currentEmployees = data.employees || data.mitarbeiter || [];
         
         // Map Firestore schema to JW schema if needed
-        currentEmployees = currentEmployees.map(emp => ({
-            ...emp,
-            jw_active: emp.jw_active !== false, 
-            isOberarzt: emp.role === 'Oberarzt' || emp.role === 'FOA' || emp.role === 'Funktionsoberarzt' || emp.isOberarzt === true
-        }));
+            const isOA = emp.role === 'Oberarzt' || emp.role === 'FOA' || emp.role === 'Funktionsoberarzt' || emp.isOberarzt === true;
+            const isSek = String(emp.name || "").toLowerCase().includes('sekretariat') || String(emp.role || "").toLowerCase().includes('sekretariat');
+            
+            return {
+                ...emp,
+                jw_active: emp.jw_active !== false, 
+                isOberarzt: isOA && !isSek
+            };
+        });
 
         console.log("Mitarbeiter erfolgreich geladen:");
         console.table(currentEmployees.map(e => ({ name: e.name, role: e.role || e.rolle, active: e.jw_active })));
