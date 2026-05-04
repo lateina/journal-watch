@@ -51,9 +51,11 @@ async function init() {
 
     // Check local storage for key
     const storedKey = localStorage.getItem('journal_api_key');
+    const storedRole = localStorage.getItem('journal_user_role');
     if (storedKey) {
         masterKey = storedKey;
-        isAdmin = true; // If we have a key, we are admin
+        isAdmin = true;
+        userRole = storedRole || 'admin'; // Default to admin for legacy or if missing
         document.getElementById('login-btn').classList.add('hidden');
         const table = document.getElementById('schedule-table');
         const controls = document.getElementById('schedule-controls');
@@ -611,6 +613,8 @@ function renderEmployees() {
 }
 
 function updateAdminUI() {
+    const isFullAdmin = isAdmin && userRole === 'admin';
+
     document.querySelectorAll('.admin-col').forEach(el => {
         if (isAdmin) el.classList.remove('hidden');
         else el.classList.add('hidden');
@@ -618,28 +622,28 @@ function updateAdminUI() {
 
     const addBtn = document.getElementById('add-employee-btn');
     if (addBtn) {
-        if (isAdmin) addBtn.classList.remove('hidden');
+        if (isFullAdmin) addBtn.classList.remove('hidden');
         else addBtn.classList.add('hidden');
     }
 
-    // Toggle Employee Tab Visibility
+    // Toggle Employee Tab Visibility - Only for Full Admin
     const employeeTabBtn = document.querySelector('button[data-tab="employees"]');
     if (employeeTabBtn) {
-        if (isAdmin) employeeTabBtn.classList.remove('hidden');
+        if (isFullAdmin) employeeTabBtn.classList.remove('hidden');
         else employeeTabBtn.classList.add('hidden');
     }
 
     // Toggle Bulk Import Section
     const bulkImportSection = document.getElementById('bulk-import-section');
     if (bulkImportSection) {
-        if (isAdmin) bulkImportSection.classList.remove('hidden');
+        if (isFullAdmin) bulkImportSection.classList.remove('hidden');
         else bulkImportSection.classList.add('hidden');
     }
 
     // Toggle Distribution Tab Button
     const distributionTabBtn = document.querySelector('button[data-tab="distribution"]');
     if (distributionTabBtn) {
-        if (isAdmin) distributionTabBtn.classList.remove('hidden');
+        if (isFullAdmin) distributionTabBtn.classList.remove('hidden');
         else distributionTabBtn.classList.add('hidden');
     }
 }
@@ -831,6 +835,8 @@ window.hideLogin = function () {
     document.getElementById('login-selected-id').value = '';
 }
 
+let userRole = null; // Store the role: 'admin' or 'sekretariat'
+
 window.checkLogin = async function () {
     const empId = document.getElementById('login-selected-id').value;
     const pin = document.getElementById('login-pin').value.trim();
@@ -856,11 +862,14 @@ window.checkLogin = async function () {
         }
 
         isAdmin = true;
+        const role = String(emp.role || emp.rolle || "").toLowerCase();
+        userRole = role.includes('sekretariat') ? 'sekretariat' : 'admin';
         
         const configSnap = await db.collection('up_config').doc('main').get();
         if (configSnap.exists) {
             masterKey = configSnap.data().jsonbin_key || configSnap.data().master_key;
             localStorage.setItem('journal_api_key', masterKey); 
+            localStorage.setItem('journal_user_role', userRole);
         }
 
         document.getElementById('login-btn').classList.add('hidden');
