@@ -171,14 +171,26 @@
     <!-- Modals -->
     <div id="login-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h3>🔐 Admin Login</h3>
-            <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Geben Sie den Master Key ein, um den Plan zu bearbeiten.</p>
-            <input type="password" id="password-input" class="edit-field" style="margin-bottom: 1rem; padding: 0.75rem;" placeholder="••••••••">
+            <h3>🔐 Bearbeiter Login</h3>
+            <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Wählen Sie Ihren Namen aus und geben Sie Ihre PIN ein.</p>
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display:block; font-size: 0.8rem; font-weight:600; margin-bottom: 0.25rem;">Mitarbeiter</label>
+                <select id="login-name-select" class="edit-field" style="padding: 0.75rem;">
+                    <option value="">-- Bitte wählen --</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display:block; font-size: 0.8rem; font-weight:600; margin-bottom: 0.25rem;">PIN</label>
+                <input type="password" id="login-pin" class="edit-field" style="padding: 0.75rem;" placeholder="PIN eingeben">
+            </div>
+
             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="hideLogin()">Abbrechen</button>
                 <button class="btn btn-primary" onclick="checkLogin()">Einloggen</button>
             </div>
-            <p id="login-error" style="color: var(--danger); font-size: 0.85rem; margin-top: 1rem; display: none; font-weight: 600;">❌ Ungültiger Key!</p>
+            <p id="login-error" style="color: var(--danger); font-size: 0.85rem; margin-top: 1rem; display: none; font-weight: 600;"></p>
         </div>
     </div>
 

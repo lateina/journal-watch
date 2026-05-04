@@ -5,7 +5,15 @@ let currentSchedule = [];
 let currentEmployees = [];
 let currentDistribution = [];
 let isAdmin = false;
-let masterKey = null; // Renamed from apiKey to avoid confusion with Firebase API Key
+let masterKey = null; // Renamed from apiKey to avoid confusion
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// Anonymous Login for Firestore Access (matching Urlaubsplaner V2)
+auth.signInAnonymously().catch(err => console.error("Firebase Anonymous Auth failed:", err));
+
 let hasUnsavedChanges = false;
 let showPast = false;
 
@@ -31,25 +39,12 @@ function setupEventListeners() {
     const loginBtn = document.getElementById('login-btn');
     if (loginBtn) loginBtn.addEventListener('click', showLogin);
 
-    // Modal Buttons
-    const modLoginBtn = document.querySelector('#login-box button:first-of-type'); // Login
-    const modCancelBtn = document.querySelector('#login-box button:last-of-type'); // Cancel
-    if (modLoginBtn) modLoginBtn.addEventListener('click', checkLogin);
-    if (modCancelBtn) modCancelBtn.addEventListener('click', hideLogin);
-
     // Save/Logout
     const saveBtn = document.querySelector('.save-btn');
     if (saveBtn) saveBtn.addEventListener('click', saveSchedule);
 
     const logoutBtn = document.querySelector('#logout-btn'); // Logout
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
-
-    // Add Employee
-    // Handled via inline onclick in index.html to ensure reliability
-    // const addEmpBtn = document.getElementById('add-employee-btn');
-    // if (addEmpBtn) {
-    //    addEmpBtn.addEventListener('click', addEmployee);
-    // }
 
     // Print Button
     const printBtn = document.getElementById('print-btn');
@@ -322,7 +317,7 @@ function renderSchedule() {
         let presenterCell = slot.presenter || '<span style="color:#cbd5e1">Frei</span>';
         let topicCell = slot.topic || '';
         let isHoliday = false;
-        let forbiddenCell = "";
+        let forgottenCell = "";
         let ersatzCell = "";
         let combinedStatsCell = "";
 
@@ -751,35 +746,71 @@ function setupTabs() {
 
 // --- Auth & Persistence ---
 
-window.showLogin = function () { document.getElementById('login-modal').classList.remove('hidden'); }
+window.showLogin = function () {
+    const modal = document.getElementById('login-modal');
+    const select = document.getElementById('login-name-select');
+    
+    // Fill select with employees
+    if (select && currentEmployees) {
+        // Keep first option
+        select.innerHTML = '<option value="">-- Bitte wählen --</option>';
+        [...currentEmployees].sort(sortEmployeesByName).forEach(emp => {
+            const opt = document.createElement('option');
+            opt.value = emp.id;
+            opt.textContent = emp.name;
+            select.appendChild(opt);
+        });
+    }
+
+    if (modal) modal.classList.remove('hidden');
+}
+
 window.hideLogin = function () {
     document.getElementById('login-modal').classList.add('hidden');
     document.getElementById('login-error').style.display = 'none';
-    document.getElementById('password-input').value = '';
+    const pinField = document.getElementById('login-pin');
+    if (pinField) pinField.value = '';
 }
 
-// Old password check removed
-
 window.checkLogin = async function () {
-    const input = document.getElementById('password-input').value.trim();
-    if (!input) return;
+    const empId = document.getElementById('login-name-select').value;
+    const pin = document.getElementById('login-pin').value.trim();
+    const errorEl = document.getElementById('login-error');
+    
+    if (!empId || !pin) {
+        errorEl.textContent = "❌ Name und PIN benötigt.";
+        errorEl.style.display = 'block';
+        return;
+    }
 
-    const originalText = document.querySelector('#login-box button:first-of-type').textContent;
-    document.querySelector('#login-box button:first-of-type').textContent = "Prüfe...";
+    const emp = currentEmployees.find(e => e.id === empId);
+    if (!emp) return;
+
+    const btn = document.querySelector('#login-modal .btn-primary');
+    const originalText = btn.textContent;
+    btn.textContent = "Prüfe...";
+    btn.disabled = true;
 
     try {
-        // Fetch config to verify key (using the entered key as a password check against jsonbin_key in Firestore)
-        const docSnap = await db.collection('up_config').doc('main').get();
-        if (!docSnap.exists) throw new Error("Konfiguration nicht gefunden.");
-        
-        const config = docSnap.data();
-        const validKey = config.jsonbin_key || config.master_key;
-        
-        if (input === validKey) {
+        // 1. PIN Check (Matching Urlaubsplaner V2 logic)
+        if (emp.pin && String(emp.pin) !== pin) {
+            throw new Error("Falsche PIN");
+        }
+
+        // 2. Role Check (admin or Sekretariat)
+        const role = emp.role || "";
+        const isAllowed = role.toLowerCase().includes('admin') || role.toLowerCase().includes('sekretariat');
+
+        if (isAllowed) {
             // Success!
-            masterKey = input;
             isAdmin = true;
-            localStorage.setItem('journal_api_key', masterKey); // Persist
+            
+            // Still set masterKey for JSONBin if present in config
+            const configSnap = await db.collection('up_config').doc('main').get();
+            if (configSnap.exists) {
+                masterKey = configSnap.data().jsonbin_key || configSnap.data().master_key;
+                localStorage.setItem('journal_api_key', masterKey); 
+            }
 
             document.getElementById('login-btn').classList.add('hidden');
             const adminPanel = document.getElementById('admin-panel');
@@ -788,7 +819,6 @@ window.checkLogin = async function () {
 
             // Reload data
             await loadSchedule();
-            await loadEmployees();
             await loadDistribution();
             renderSchedule();
             renderEmployees();
@@ -802,17 +832,15 @@ window.checkLogin = async function () {
                 standDateEl.textContent = "Stand: " + now.toLocaleDateString('de-DE');
             }
         } else {
-            throw new Error("Ungültiger Key");
+            errorEl.textContent = "❌ Keine Berechtigung (Rolle: " + (role || 'User') + ")";
+            errorEl.style.display = 'block';
         }
     } catch (e) {
-        console.error("Login Error:", e);
-        const err = document.getElementById('login-error');
-        if (err) {
-            err.textContent = "Ungültiger Master Key!";
-            err.style.display = 'block';
-        }
+        errorEl.textContent = "❌ Login fehlgeschlagen: " + e.message;
+        errorEl.style.display = 'block';
     } finally {
-        document.querySelector('#login-box button:first-of-type').textContent = originalText;
+        btn.textContent = originalText;
+        btn.disabled = false;
     }
 }
 
