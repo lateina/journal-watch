@@ -276,8 +276,10 @@ tr:hover td {
 input:checked + .slider { background-color: var(--primary); }
 input:checked + .slider:before { transform: translateX(20px); }
 
-/* Utility */
+/* Visibility helpers */
 .hidden { display: none !important; }
+.print-hidden { display: none !important; }
+.past-hidden { display: none !important; }
 .center-text { text-align: center; }
 
 /* Hide Print-only elements on screen */

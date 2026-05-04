@@ -311,10 +311,11 @@ function renderSchedule() {
         const dateObj = new Date(slot.date);
         const dayName = dateObj.toLocaleDateString('de-DE', { weekday: 'long' });
 
-        // Skip past dates if toggle is OFF (but always show in admin mode? No, follow the toggle)
-        if (!showPast && slot.date < today) return;
-
         const row = document.createElement('tr');
+        if (slot.date < today) {
+            row.classList.add('past-row');
+            if (!showPast) row.classList.add('past-hidden');
+        }
         // Check for Holiday / Vacation
         const holidayName = checkHoliday(dateObj);
 
@@ -1218,13 +1219,13 @@ window.confirmPrint = function () {
     // 1. Hide unwanted rows
     const rows = document.querySelectorAll('#schedule-body tr');
     rows.forEach(row => {
+        // Temporarily show all for range filtering
+        row.classList.remove('past-hidden');
+        
         const dateCell = row.cells[0]; // First cell is date
         if (dateCell) {
-            // German Date format DD.MM.YYYY
             const parts = dateCell.textContent.trim().split('.');
             if (parts.length === 3) {
-                // Reassemble to YYYYMMDD
-                // Reassemble to YYYYMMDD (with padding)
                 const dPadded = parts[0].padStart(2, '0');
                 const mPadded = parts[1].padStart(2, '0');
                 const yPadded = parts[2];
@@ -1247,13 +1248,18 @@ window.confirmPrint = function () {
     closePrintModal();
 
     // 3. Print
-    // Small delay to ensure browser register DOM changes before snapshot
     setTimeout(() => {
         window.print();
 
-        // 4. Restore rows after print (delayed to allow dialog to open)
+        // 4. Restore rows after print
         setTimeout(() => {
-            rows.forEach(row => row.classList.remove('print-hidden'));
+            rows.forEach(row => {
+                row.classList.remove('print-hidden');
+                // Restore past-hidden if needed
+                if (!showPast && row.classList.contains('past-row')) {
+                    row.classList.add('past-hidden');
+                }
+            });
         }, 1000);
     }, 100);
 }
