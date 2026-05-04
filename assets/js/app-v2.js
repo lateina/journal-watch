@@ -784,10 +784,10 @@ window.filterLoginNames = function () {
     }
 
     // 1. Specific search for admin and Sekretariat (prioritized)
-    const specialNames = ['admin', 'Sekretariat'];
+    const specialNames = ['admin', 'Administrator', 'Sekretariat'];
     const specialMatches = currentEmployees.filter(emp => {
         const name = emp.name.toLowerCase();
-        return specialNames.some(sn => sn.toLowerCase() === name) && name.includes(query);
+        return (specialNames.some(sn => name.includes(sn.toLowerCase())) || name.startsWith('admin')) && name.includes(query);
     });
 
     // 2. Search for others who might have the role (optional fallback)
