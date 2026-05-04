@@ -752,26 +752,57 @@ function setupTabs() {
 
 window.showLogin = function () {
     const modal = document.getElementById('login-modal');
-    const select = document.getElementById('login-name-select');
+    if (modal) modal.classList.remove('hidden');
     
-    // Fill select with employees (Only Admin and Sekretariat)
-    if (select && currentEmployees) {
-        select.innerHTML = '<option value="">-- Bitte wählen --</option>';
-        [...currentEmployees]
-            .filter(emp => {
-                const role = (emp.role || "").toLowerCase();
-                return role.includes('admin') || role.includes('sekretariat');
-            })
-            .sort(sortEmployeesByName)
-            .forEach(emp => {
-                const opt = document.createElement('option');
-                opt.value = emp.id;
-                opt.textContent = emp.name;
-                select.appendChild(opt);
-            });
+    const searchInput = document.getElementById('login-name-search');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    const results = document.getElementById('login-search-results');
+    if (results) results.classList.add('hidden');
+}
+
+window.filterLoginNames = function () {
+    const searchInput = document.getElementById('login-name-search');
+    const resultsContainer = document.getElementById('login-search-results');
+    const query = searchInput.value.toLowerCase().trim();
+
+    if (!query) {
+        resultsContainer.classList.add('hidden');
+        return;
     }
 
-    if (modal) modal.classList.remove('hidden');
+    const matches = currentEmployees.filter(emp => {
+        const nameMatch = emp.name.toLowerCase().includes(query);
+        const role = String(emp.role || emp.rolle || "").toLowerCase();
+        const roleMatch = role.includes('admin') || role.includes('sekretariat');
+        return nameMatch && roleMatch;
+    }).sort(sortEmployeesByName);
+
+    if (matches.length > 0) {
+        resultsContainer.innerHTML = '';
+        matches.forEach(emp => {
+            const div = document.createElement('div');
+            div.className = 'user-item'; // Use existing styles or inline
+            div.style.padding = '10px';
+            div.style.cursor = 'pointer';
+            div.style.borderBottom = '1px solid #eee';
+            div.textContent = emp.name;
+            div.onclick = () => selectLoginName(emp);
+            resultsContainer.appendChild(div);
+        });
+        resultsContainer.classList.remove('hidden');
+    } else {
+        resultsContainer.innerHTML = '<div style="padding:10px; color:var(--text-muted);">Kein Admin/Sekretariat gefunden</div>';
+        resultsContainer.classList.remove('hidden');
+    }
+}
+
+window.selectLoginName = function (emp) {
+    document.getElementById('login-name-search').value = emp.name;
+    document.getElementById('login-selected-id').value = emp.id;
+    document.getElementById('login-search-results').classList.add('hidden');
 }
 
 window.hideLogin = function () {
@@ -779,15 +810,16 @@ window.hideLogin = function () {
     document.getElementById('login-error').style.display = 'none';
     const pinField = document.getElementById('login-pin');
     if (pinField) pinField.value = '';
+    document.getElementById('login-selected-id').value = '';
 }
 
 window.checkLogin = async function () {
-    const empId = document.getElementById('login-name-select').value;
+    const empId = document.getElementById('login-selected-id').value;
     const pin = document.getElementById('login-pin').value.trim();
     const errorEl = document.getElementById('login-error');
     
     if (!empId || !pin) {
-        errorEl.textContent = "❌ Name und PIN benötigt.";
+        errorEl.textContent = "❌ Bitte Name wählen und PIN eingeben.";
         errorEl.style.display = 'block';
         return;
     }
@@ -801,48 +833,34 @@ window.checkLogin = async function () {
     btn.disabled = true;
 
     try {
-        // 1. PIN Check (Matching Urlaubsplaner V2 logic)
         if (emp.pin && String(emp.pin) !== pin) {
             throw new Error("Falsche PIN");
         }
 
-        // 2. Role Check (admin or Sekretariat)
-        const role = emp.role || "";
-        const isAllowed = role.toLowerCase().includes('admin') || role.toLowerCase().includes('sekretariat');
+        isAdmin = true;
+        
+        const configSnap = await db.collection('up_config').doc('main').get();
+        if (configSnap.exists) {
+            masterKey = configSnap.data().jsonbin_key || configSnap.data().master_key;
+            localStorage.setItem('journal_api_key', masterKey); 
+        }
 
-        if (isAllowed) {
-            // Success!
-            isAdmin = true;
-            
-            // Still set masterKey for JSONBin if present in config
-            const configSnap = await db.collection('up_config').doc('main').get();
-            if (configSnap.exists) {
-                masterKey = configSnap.data().jsonbin_key || configSnap.data().master_key;
-                localStorage.setItem('journal_api_key', masterKey); 
-            }
+        document.getElementById('login-btn').classList.add('hidden');
+        const adminPanel = document.getElementById('admin-panel');
+        if (adminPanel) adminPanel.classList.remove('hidden');
+        hideLogin();
 
-            document.getElementById('login-btn').classList.add('hidden');
-            const adminPanel = document.getElementById('admin-panel');
-            if (adminPanel) adminPanel.classList.remove('hidden');
-            hideLogin();
+        await loadSchedule();
+        await loadDistribution();
+        renderSchedule();
+        renderEmployees();
+        renderDistribution();
+        updateAdminUI();
 
-            // Reload data
-            await loadSchedule();
-            await loadDistribution();
-            renderSchedule();
-            renderEmployees();
-            renderDistribution();
-            updateAdminUI();
-
-            // Update Print Header "Stand" date
-            const standDateEl = document.getElementById('print-stand-date');
-            if (standDateEl) {
-                const now = new Date();
-                standDateEl.textContent = "Stand: " + now.toLocaleDateString('de-DE');
-            }
-        } else {
-            errorEl.textContent = "❌ Keine Berechtigung (Rolle: " + (role || 'User') + ")";
-            errorEl.style.display = 'block';
+        const standDateEl = document.getElementById('print-stand-date');
+        if (standDateEl) {
+            const now = new Date();
+            standDateEl.textContent = "Stand: " + now.toLocaleDateString('de-DE');
         }
     } catch (e) {
         errorEl.textContent = "❌ Login fehlgeschlagen: " + e.message;
