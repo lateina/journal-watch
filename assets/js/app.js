@@ -112,8 +112,9 @@ async function loadEmployees() {
             // Map Firestore schema to JW schema if needed
             currentEmployees = currentEmployees.map(emp => ({
                 ...emp,
-                // Ensure 'active' and 'isOberarzt' flags exist as expected by JW UI
-                active: emp.active !== false,
+                // Ensure 'jw_active' and 'isOberarzt' flags exist as expected by JW UI
+                // We use jw_active to keep it independent of other planners' active status
+                jw_active: emp.jw_active !== false, 
                 isOberarzt: emp.role === 'Oberarzt' || emp.role === 'FOA' || emp.role === 'Funktionsoberarzt' || emp.isOberarzt === true
             }));
         } else {
@@ -377,7 +378,7 @@ function renderSchedule() {
                 if (currentEmployees && Array.isArray(currentEmployees)) {
                     const sortedEmps = [...currentEmployees].sort(sortEmployeesByName);
                     sortedEmps.forEach(emp => {
-                        if (emp.active) {
+                        if (emp.jw_active) {
                             if (!!emp.isOberarzt === isOberarztDay || slot.presenter === emp.name) {
                                 const selected = (slot.presenter === emp.name) ? 'selected' : '';
                                 options += `<option value="${emp.name}" ${selected}>${emp.name}</option>`;
@@ -385,7 +386,7 @@ function renderSchedule() {
                         }
                     });
                 }
-                if (slot.presenter && (!currentEmployees || !currentEmployees.find(e => e.name === slot.presenter && e.active))) {
+                if (slot.presenter && (!currentEmployees || !currentEmployees.find(e => e.name === slot.presenter && e.jw_active))) {
                     options += `<option value="${slot.presenter}" selected>${slot.presenter} (Archiv)</option>`;
                 }
 
@@ -418,7 +419,7 @@ function renderSchedule() {
                 const swapOptions = [...currentEmployees]
                     .filter(e => {
                         const hasAppointments = (stats[e.name] || 0) + (forgottenStats[e.name] || 0) > 0;
-                        return e.active && e.name !== slot.presenter && !!e.isOberarzt === isOberarztSlot && hasAppointments;
+                        return e.jw_active && e.name !== slot.presenter && !!e.isOberarzt === isOberarztSlot && hasAppointments;
                     })
                     .sort(sortEmployeesByName)
                     .map(e => `<option value="${e.name}">${e.name}</option>`)
@@ -585,7 +586,7 @@ function renderEmployees() {
             emailCell = `<input class="edit-field" value="${emp.email || ''}" onchange="updateEmployee(${index}, 'email', this.value)">`;
             oaCell = `<input type="checkbox" ${emp.isOberarzt ? 'checked' : ''} onchange="updateEmployee(${index}, 'isOberarzt', this.checked)">`;
             const activeTooltip = "Die Checkbox blendet Mitarbeiter temporär aus, die aktuell keine Fortbildungen übernehmen (z. B. durch Rotationen in andere Abteilungen oder längere Abwesenheit)";
-            activeCell = `<span class="custom-tooltip" data-tooltip="${activeTooltip}"><input type="checkbox" ${emp.active ? 'checked' : ''} onchange="updateEmployee(${index}, 'active', this.checked)"></span>`;
+            activeCell = `<span class="custom-tooltip" data-tooltip="${activeTooltip}"><input type="checkbox" ${emp.jw_active ? 'checked' : ''} onchange="updateEmployee(${index}, 'jw_active', this.checked)"></span>`;
             actionCell = `<button class="delete-btn" onclick="deleteEmployee(${index})">Löschen</button>`;
         }
 
@@ -967,9 +968,9 @@ window.autoDistribute = function () {
     const todayStr = todayDate.toISOString().split('T')[0];
 
     // Filter active employees
-    const activeEmployees = currentEmployees.filter(e => e.active);
-    const oaList = activeEmployees.filter(e => e.isOberarzt).sort(sortEmployeesByName);
-    const assistList = activeEmployees.filter(e => !e.isOberarzt).sort(sortEmployeesByName);
+    const allActive = currentEmployees.filter(e => e.jw_active ?? true);
+    const oaList = allActive.filter(e => e.isOberarzt).sort(sortEmployeesByName);
+    const assistList = allActive.filter(e => !e.isOberarzt).sort(sortEmployeesByName);
 
     if (oaList.length === 0 && assistList.length === 0) {
         alert("Keine aktiven Mitarbeiter gefunden.");
