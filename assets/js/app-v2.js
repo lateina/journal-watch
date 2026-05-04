@@ -101,9 +101,9 @@ async function loadEmployees() {
         const docSnap = await db.collection('up_config').doc('main').get();
         if (docSnap.exists) {
             const data = docSnap.data();
-        currentEmployees = data.employees || data.mitarbeiter || [];
-        
-        // Map Firestore schema to JW schema if needed
+            currentEmployees = data.employees || data.mitarbeiter || [];
+            
+            currentEmployees = currentEmployees.map(emp => {
             const isOA = emp.role === 'Oberarzt' || emp.role === 'FOA' || emp.role === 'Funktionsoberarzt' || emp.isOberarzt === true;
             const isSek = String(emp.name || "").toLowerCase().includes('sekretariat') || String(emp.role || "").toLowerCase().includes('sekretariat');
             
