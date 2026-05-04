@@ -654,6 +654,13 @@ function updateAdminUI() {
         if (isFullAdmin) distributionTabBtn.classList.remove('hidden');
         else distributionTabBtn.classList.add('hidden');
     }
+
+    // Toggle Logout Button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        if (isAdmin) logoutBtn.classList.remove('hidden');
+        else logoutBtn.classList.add('hidden');
+    }
 }
 
 window.parseEmployeeInput = function () {
