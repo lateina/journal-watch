@@ -1,12 +1,13 @@
-const SCHEDULE_BIN_ID = "699332e2ae596e708f2f7434"; // Schedule
-const EMPLOYEES_BIN_ID = "699333dcd0ea881f40bf132f"; // Employees
-const DISTRIBUTION_BIN_ID = "699c40edae596e708f42284d"; // Distribution
+// JSONBin Bins removed - now using Firestore
+// const SCHEDULE_BIN_ID = "699332e2ae596e708f2f7434"; // Schedule
+// const EMPLOYEES_BIN_ID = "699333dcd0ea881f40bf132f"; // Employees
+// const DISTRIBUTION_BIN_ID = "699c40edae596e708f42284d"; // Distribution
 
 let currentSchedule = [];
 let currentEmployees = [];
 let currentDistribution = [];
 let isAdmin = false;
-let apiKey = null;
+let masterKey = null; // Renamed from apiKey to avoid confusion with Firebase API Key
 let hasUnsavedChanges = false;
 
 window.addEventListener('beforeunload', (e) => {
@@ -60,8 +61,8 @@ async function init() {
     // Check local storage for key
     const storedKey = localStorage.getItem('journal_api_key');
     if (storedKey) {
-        apiKey = storedKey;
-        isAdmin = true; // If we have a key, we are admin (since there is only one key)
+        masterKey = storedKey;
+        isAdmin = true; // If we have a key, we are admin
         document.getElementById('login-btn').classList.add('hidden');
         const adminPanel = document.getElementById('admin-panel');
         if (adminPanel) adminPanel.classList.remove('hidden');
@@ -80,29 +81,17 @@ async function init() {
 
 document.addEventListener('DOMContentLoaded', init);
 
-// --- Data Loading ---
-
-async function fetchData(binId) {
-    if (!apiKey) {
-        throw new Error("Bitte einloggen.");
-    }
-
-    const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-        headers: { "X-Master-Key": apiKey }
-    });
-
-    if (response.status === 401 || response.status === 403) {
-        throw new Error("Zugriff verweigert (Falscher Key?).");
-    }
-
-    if (!response.ok) throw new Error(`Fehler: ${response.status}`);
-    const data = await response.json();
-    return data.record;
-}
+// --- Data Loading (Firestore) ---
 
 async function loadSchedule() {
     try {
-        currentSchedule = await fetchData(SCHEDULE_BIN_ID);
+        const docSnap = await db.collection('up_config').doc('jw_schedule').get();
+        if (docSnap.exists) {
+            currentSchedule = docSnap.data().data || [];
+        } else {
+            console.warn("No schedule found in Firestore.");
+            currentSchedule = [];
+        }
         renderSchedule();
     } catch (e) {
         showError("Fehler beim Laden des Plans: " + e.message);
@@ -111,9 +100,20 @@ async function loadSchedule() {
 
 async function loadEmployees() {
     try {
-        currentEmployees = await fetchData(EMPLOYEES_BIN_ID);
-        if (!Array.isArray(currentEmployees)) {
-            console.warn("Mitarbeiter-Daten sind kein Array. Initialisiere neu.", currentEmployees);
+        const docSnap = await db.collection('up_config').doc('main').get();
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            currentEmployees = data.employees || data.mitarbeiter || [];
+            
+            // Map Firestore schema to JW schema if needed
+            currentEmployees = currentEmployees.map(emp => ({
+                ...emp,
+                // Ensure 'active' and 'isOberarzt' flags exist as expected by JW UI
+                active: emp.active !== false,
+                isOberarzt: emp.role === 'Oberarzt' || emp.isOberarzt === true
+            }));
+        } else {
+            console.warn("No employee config found in Firestore.");
             currentEmployees = [];
         }
         syncEmployeeIDs();
@@ -121,16 +121,18 @@ async function loadEmployees() {
         renderSchedule(); // Re-render schedule to populate dropdowns
     } catch (e) {
         console.warn("Fehler beim Laden der Mitarbeiter:", e);
-        currentEmployees = []; // Fallback
+        currentEmployees = [];
         renderEmployees();
     }
 }
 
 async function loadDistribution() {
     try {
-        currentDistribution = await fetchData(DISTRIBUTION_BIN_ID);
-        if (!Array.isArray(currentDistribution)) {
-            console.warn("Distribution-Daten sind kein Array.", currentDistribution);
+        const docSnap = await db.collection('up_config').doc('jw_distribution').get();
+        if (docSnap.exists) {
+            currentDistribution = docSnap.data().data || [];
+        } else {
+            console.warn("No distribution found in Firestore.");
             currentDistribution = [];
         }
         syncEmployeeIDs();
@@ -766,27 +768,29 @@ window.checkLogin = async function () {
     const input = document.getElementById('password-input').value.trim();
     if (!input) return;
 
-    // Test the key by trying to fetch the schedule
     const originalText = document.querySelector('#login-box button:first-of-type').textContent;
     document.querySelector('#login-box button:first-of-type').textContent = "Prüfe...";
 
     try {
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${SCHEDULE_BIN_ID}/latest`, {
-            headers: { "X-Master-Key": input }
-        });
-
-        if (response.ok) {
+        // Fetch config to verify key (using the entered key as a password check against jsonbin_key in Firestore)
+        const docSnap = await db.collection('up_config').doc('main').get();
+        if (!docSnap.exists) throw new Error("Konfiguration nicht gefunden.");
+        
+        const config = docSnap.data();
+        const validKey = config.jsonbin_key || config.master_key;
+        
+        if (input === validKey) {
             // Success!
-            apiKey = input;
+            masterKey = input;
             isAdmin = true;
-            localStorage.setItem('journal_api_key', apiKey); // Persist
+            localStorage.setItem('journal_api_key', masterKey); // Persist
 
             document.getElementById('login-btn').classList.add('hidden');
             const adminPanel = document.getElementById('admin-panel');
             if (adminPanel) adminPanel.classList.remove('hidden');
             hideLogin();
 
-            // Reload data with new key
+            // Reload data
             await loadSchedule();
             await loadEmployees();
             await loadDistribution();
@@ -805,6 +809,7 @@ window.checkLogin = async function () {
             throw new Error("Ungültiger Key");
         }
     } catch (e) {
+        console.error("Login Error:", e);
         const err = document.getElementById('login-error');
         if (err) {
             err.textContent = "Ungültiger Master Key!";
@@ -817,10 +822,10 @@ window.checkLogin = async function () {
 
 window.logout = function () {
     isAdmin = false;
-    apiKey = null;
+    masterKey = null;
     localStorage.removeItem('journal_api_key'); // Clear
 
-    location.reload(); // Reload to reset state (simplest way to clear data from memory)
+    location.reload(); 
 }
 window.handleSwap = function (sourceIndex, targetName) {
     if (!targetName) return;
@@ -1259,17 +1264,38 @@ window.confirmPrint = function () {
 }
 
 window.saveSchedule = async function () {
+    if (!isAdmin) return;
     const btn = document.querySelector('.save-btn');
     const originalText = btn.textContent;
     btn.textContent = "Speichere...";
     btn.disabled = true;
 
     try {
-        await saveData(SCHEDULE_BIN_ID, currentSchedule);
-        await saveData(EMPLOYEES_BIN_ID, currentEmployees);
+        const now = new Date().toISOString();
+        
+        // 1. Save Schedule
+        await db.collection('up_config').doc('jw_schedule').set({
+            data: currentSchedule,
+            updatedAt: now
+        }, { merge: true });
+
+        // 2. Save Distribution
+        await db.collection('up_config').doc('jw_distribution').set({
+            data: currentDistribution,
+            updatedAt: now
+        }, { merge: true });
+
+        // 3. Save Employees (Shared with Urlaubsplaner)
+        // Clean employees before saving (remove JW-only UI flags if any, though here we keep them for compatibility)
+        await db.collection('up_config').doc('main').set({
+            employees: currentEmployees,
+            updatedAt: now
+        }, { merge: true });
+
         hasUnsavedChanges = false;
-        alert("Alle Änderungen gespeichert!");
+        alert("Alle Änderungen in Firestore gespeichert!");
     } catch (e) {
+        console.error("Save Error:", e);
         alert("Fehler beim Speichern: " + e.message);
     } finally {
         btn.textContent = originalText;
@@ -1277,16 +1303,4 @@ window.saveSchedule = async function () {
     }
 }
 
-async function saveData(binId, data) {
-    if (!apiKey) throw new Error("Nicht eingeloggt (Key fehlt).");
-
-    const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-        method: 'PUT',
-        headers: {
-            "Content-Type": "application/json",
-            "X-Master-Key": apiKey
-        },
-        body: JSON.stringify(data)
-    });
-    if (!response.ok) throw new Error("Update fehlgeschlagen für Bin " + binId);
-}
+// Old saveData function removed

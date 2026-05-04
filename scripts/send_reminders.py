@@ -7,18 +7,53 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 
 # Configuration from Environment Variables
-API_KEY = os.environ.get("JSONBIN_API_KEY")
-SCHEDULE_BIN_ID = os.environ.get("SCHEDULE_BIN_ID")
-EMPLOYEES_BIN_ID = os.environ.get("EMPLOYEES_BIN_ID")
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
 EMAIL_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_PASS = os.environ.get("EMAIL_HOST_PASSWORD")
 
-def fetch_json(bin_id):
-    url = f"https://api.jsonbin.io/v3/b/{bin_id}/latest"
-    headers = {"X-Master-Key": API_KEY}
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return response.json()['record']
+def get_auth_token(api_key):
+    try:
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}"
+        headers = {
+            'Referer': 'https://lateina.github.io/',
+            'Origin': 'https://lateina.github.io'
+        }
+        res = requests.post(url, headers=headers, json={"returnSecureToken": True})
+        res.raise_for_status()
+        return res.json().get('idToken')
+    except Exception as e:
+        print(f"Auth failed: {e}")
+        return None
+
+def from_firestore(fields):
+    if not fields: return {}
+    res = {}
+    for key, val in fields.items():
+        if 'stringValue' in val: res[key] = val['stringValue']
+        elif 'booleanValue' in val: res[key] = val['booleanValue']
+        elif 'integerValue' in val: res[key] = int(val['integerValue'])
+        elif 'arrayValue' in val:
+            values = val['arrayValue'].get('values', [])
+            res[key] = [v.get('stringValue') or (from_firestore(v.get('mapValue', {}).get('fields', {})) if 'mapValue' in v else v) for v in values]
+        elif 'mapValue' in val:
+            res[key] = from_firestore(val['mapValue'].get('fields', {}))
+    return res
+
+def fetch_firestore_document(path):
+    token = get_auth_token(FIREBASE_API_KEY)
+    url = f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}/databases/(default)/documents/{path}?key={FIREBASE_API_KEY}"
+    headers = {
+        'Referer': 'https://lateina.github.io/',
+        'Origin': 'https://lateina.github.io'
+    }
+    if token:
+        headers['Authorization'] = f"Bearer {token}"
+    
+    res = requests.get(url, headers=headers)
+    res.raise_for_status()
+    data = res.json()
+    return from_firestore(data.get('fields', {}))
 
 def send_email(to_email, presenter_name, date_str):
     subject = f"Erinnerung: Journal Watch Präsentation am {date_str}"
@@ -51,6 +86,7 @@ def send_email(to_email, presenter_name, date_str):
     
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.set_debuglevel(0)
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASS)
         text = msg.as_string()
@@ -61,43 +97,41 @@ def send_email(to_email, presenter_name, date_str):
         print(f"Failed to send email to {to_email}: {e}")
 
 def main():
-    if not all([API_KEY, SCHEDULE_BIN_ID, EMPLOYEES_BIN_ID, EMAIL_USER, EMAIL_PASS]):
-        print("Missing environment variables.")
+    if not all([FIREBASE_API_KEY, FIREBASE_PROJECT_ID, EMAIL_USER, EMAIL_PASS]):
+        print("Missing environment variables (FIREBASE_API_KEY, FIREBASE_PROJECT_ID, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD).")
         return
 
-    print("Fetching data...")
-    schedule = fetch_json(SCHEDULE_BIN_ID)
-    employees = fetch_json(EMPLOYEES_BIN_ID)
+    print("Fetching data from Firestore...")
+    try:
+        schedule_data = fetch_firestore_document('up_config/jw_schedule')
+        config_data = fetch_firestore_document('up_config/main')
+        
+        schedule = schedule_data.get('data', [])
+        employees = config_data.get('employees', [])
+    except Exception as e:
+        print(f"Failed to fetch data: {e}")
+        return
     
     # Map employees by name for easy lookup
-    # Assuming "name" is unique and matches "presenter" in schedule
-    employee_map = {e['name']: e['email'] for e in employees if e.get('active')}
+    employee_map = {e['name']: e['email'] for e in employees if e.get('active') and e.get('email')}
     
     today = datetime.now().date()
-    
-    # Calculate "Next Monday" to be robust against running day (Mon or Wed)
-    # 0 = Mon, 1 = Tue, ... 6 = Sun
-    # If today is Mon (0): 7 - 0 = 7 days -> Next Mon
-    # If today is Wed (2): 7 - 2 = 5 days -> Next Mon
-    # If today is Sun (6): 7 - 6 = 1 day -> Next Mon (which is tomorrow)
     days_until_next_monday = 7 - today.weekday()
     start_date = today + timedelta(days=days_until_next_monday)
-    
-    # Check the whole work week (Monday to Friday)
     end_date = start_date + timedelta(days=4)
     
     print(f"Checking for presentations next week: {start_date} to {end_date}...")
     
     count = 0
     for slot in schedule:
+        if not slot.get('date'): continue
         slot_date = datetime.strptime(slot['date'], "%Y-%m-%d").date()
         
         if start_date <= slot_date <= end_date:
             presenter = slot.get('presenter')
             if presenter and presenter in employee_map:
                 email = employee_map[presenter]
-                date_obj = datetime.strptime(slot['date'], "%Y-%m-%d")
-                formatted_date = date_obj.strftime("%d.%m.%Y")
+                formatted_date = slot_date.strftime("%d.%m.%Y")
                 print(f"Found slot for {presenter} on {slot['date']} ({email})")
                 send_email(email, presenter, formatted_date)
                 count += 1
