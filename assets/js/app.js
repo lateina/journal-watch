@@ -754,16 +754,21 @@ window.showLogin = function () {
     const modal = document.getElementById('login-modal');
     const select = document.getElementById('login-name-select');
     
-    // Fill select with employees
+    // Fill select with employees (Only Admin and Sekretariat)
     if (select && currentEmployees) {
-        // Keep first option
         select.innerHTML = '<option value="">-- Bitte wählen --</option>';
-        [...currentEmployees].sort(sortEmployeesByName).forEach(emp => {
-            const opt = document.createElement('option');
-            opt.value = emp.id;
-            opt.textContent = emp.name;
-            select.appendChild(opt);
-        });
+        [...currentEmployees]
+            .filter(emp => {
+                const role = (emp.role || "").toLowerCase();
+                return role.includes('admin') || role.includes('sekretariat');
+            })
+            .sort(sortEmployeesByName)
+            .forEach(emp => {
+                const opt = document.createElement('option');
+                opt.value = emp.id;
+                opt.textContent = emp.name;
+                select.appendChild(opt);
+            });
     }
 
     if (modal) modal.classList.remove('hidden');
