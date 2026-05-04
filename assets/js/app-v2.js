@@ -1,4 +1,3 @@
-alert("JOURNAL WATCH V2.2 GELADEN");
 // JSONBin Bins for Distribution (Shared with Urlaubsplaner V2)
 const DISTRIBUTION_BIN_ID = "699c40edae596e708f42284d";
 
@@ -100,17 +99,19 @@ async function loadEmployees() {
         const docSnap = await db.collection('up_config').doc('main').get();
         if (docSnap.exists) {
             const data = docSnap.data();
-            currentEmployees = data.employees || data.mitarbeiter || [];
-            
-            // Map Firestore schema to JW schema if needed
-            currentEmployees = currentEmployees.map(emp => ({
-                ...emp,
-                // Ensure 'jw_active' and 'isOberarzt' flags exist as expected by JW UI
-                // We use jw_active to keep it independent of other planners' active status
-                jw_active: emp.jw_active !== false, 
-                isOberarzt: emp.role === 'Oberarzt' || emp.role === 'FOA' || emp.role === 'Funktionsoberarzt' || emp.isOberarzt === true
-            }));
-        } else {
+        currentEmployees = data.employees || data.mitarbeiter || [];
+        
+        // Map Firestore schema to JW schema if needed
+        currentEmployees = currentEmployees.map(emp => ({
+            ...emp,
+            jw_active: emp.jw_active !== false, 
+            isOberarzt: emp.role === 'Oberarzt' || emp.role === 'FOA' || emp.role === 'Funktionsoberarzt' || emp.isOberarzt === true
+        }));
+
+        console.log("Mitarbeiter erfolgreich geladen:");
+        console.table(currentEmployees.map(e => ({ name: e.name, role: e.role || e.rolle, active: e.jw_active })));
+
+    } else {
             console.warn("No employee config found in Firestore.");
             currentEmployees = [];
         }
