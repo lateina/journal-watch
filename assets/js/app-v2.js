@@ -773,28 +773,30 @@ window.filterLoginNames = function () {
         return;
     }
 
+    // Filter by name match
     const matches = currentEmployees.filter(emp => {
-        const nameMatch = emp.name.toLowerCase().includes(query);
-        const role = String(emp.role || emp.rolle || "").toLowerCase();
-        const roleMatch = role.includes('admin') || role.includes('sekretariat');
-        return nameMatch && roleMatch;
+        return emp.name.toLowerCase().includes(query);
     }).sort(sortEmployeesByName);
 
     if (matches.length > 0) {
         resultsContainer.innerHTML = '';
         matches.forEach(emp => {
+            const role = String(emp.role || emp.rolle || "Keine Rolle").trim();
             const div = document.createElement('div');
-            div.className = 'user-item'; // Use existing styles or inline
+            div.className = 'user-item';
             div.style.padding = '10px';
             div.style.cursor = 'pointer';
             div.style.borderBottom = '1px solid #eee';
-            div.textContent = emp.name;
+            
+            // Show role in brackets to help us identify the correct ones
+            div.textContent = `${emp.name} (${role})`;
+            
             div.onclick = () => selectLoginName(emp);
             resultsContainer.appendChild(div);
         });
         resultsContainer.classList.remove('hidden');
     } else {
-        resultsContainer.innerHTML = '<div style="padding:10px; color:var(--text-muted);">Kein Admin/Sekretariat gefunden</div>';
+        resultsContainer.innerHTML = '<div style="padding:10px; color:var(--text-muted);">Kein Mitarbeiter gefunden</div>';
         resultsContainer.classList.remove('hidden');
     }
 }
