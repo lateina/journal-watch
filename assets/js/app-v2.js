@@ -784,17 +784,18 @@ window.filterLoginNames = function () {
     }
 
     // 1. Specific search for admin and Sekretariat (prioritized)
+    // We ignore the 'active' status here because you must be able to log in even if inactive
     const specialNames = ['admin', 'Administrator', 'Sekretariat'];
     const specialMatches = currentEmployees.filter(emp => {
         const name = emp.name.toLowerCase();
         return (specialNames.some(sn => name.includes(sn.toLowerCase())) || name.startsWith('admin')) && name.includes(query);
     });
 
-    // 2. Search for others who might have the role (optional fallback)
+    // 2. Search for others who might have the role
     const otherMatches = currentEmployees.filter(emp => {
         const name = emp.name.toLowerCase();
-        const isSpecial = specialNames.some(sn => sn.toLowerCase() === name);
-        if (isSpecial) return false; // Already in specialMatches
+        const isSpecial = specialNames.some(sn => name.includes(sn.toLowerCase()) || name.startsWith('admin'));
+        if (isSpecial) return false; 
 
         const role = String(emp.role || emp.rolle || "").toLowerCase();
         return name.includes(query) && (role.includes('admin') || role.includes('sekretariat'));
