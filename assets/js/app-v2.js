@@ -775,36 +775,40 @@ window.filterLoginNames = function () {
         return;
     }
 
-    // Filter by name match
-    const matches = currentEmployees.filter(emp => {
+    // 1. Specific search for admin and Sekretariat (prioritized)
+    const specialNames = ['admin', 'Sekretariat'];
+    const specialMatches = currentEmployees.filter(emp => {
         const name = emp.name.toLowerCase();
-        const queryMatch = name.includes(query);
-        
-        // Special check for 'admin' and 'sekretariat' accounts
-        const isSpecialAccount = name === 'admin' || name === 'sekretariat' || name.includes('sekretariat');
-        
-        return queryMatch && (isSpecialAccount || String(emp.role || emp.rolle || "").toLowerCase().includes('admin') || String(emp.role || emp.rolle || "").toLowerCase().includes('sekretariat'));
+        return specialNames.some(sn => sn.toLowerCase() === name) && name.includes(query);
+    });
+
+    // 2. Search for others who might have the role (optional fallback)
+    const otherMatches = currentEmployees.filter(emp => {
+        const name = emp.name.toLowerCase();
+        const isSpecial = specialNames.some(sn => sn.toLowerCase() === name);
+        if (isSpecial) return false; // Already in specialMatches
+
+        const role = String(emp.role || emp.rolle || "").toLowerCase();
+        return name.includes(query) && (role.includes('admin') || role.includes('sekretariat'));
     }).sort(sortEmployeesByName);
 
-    if (matches.length > 0) {
+    const allMatches = [...specialMatches, ...otherMatches];
+
+    if (allMatches.length > 0) {
         resultsContainer.innerHTML = '';
-        matches.forEach(emp => {
-            const role = String(emp.role || emp.rolle || "Keine Rolle").trim();
+        allMatches.forEach(emp => {
             const div = document.createElement('div');
             div.className = 'user-item';
             div.style.padding = '10px';
             div.style.cursor = 'pointer';
             div.style.borderBottom = '1px solid #eee';
-            
-            // Show role in brackets to help us identify the correct ones
-            div.textContent = `${emp.name} (${role})`;
-            
+            div.textContent = emp.name;
             div.onclick = () => selectLoginName(emp);
             resultsContainer.appendChild(div);
         });
         resultsContainer.classList.remove('hidden');
     } else {
-        resultsContainer.innerHTML = '<div style="padding:10px; color:var(--text-muted);">Kein Mitarbeiter gefunden</div>';
+        resultsContainer.innerHTML = '<div style="padding:10px; color:var(--text-muted);">Kein Account gefunden</div>';
         resultsContainer.classList.remove('hidden');
     }
 }
