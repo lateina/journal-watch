@@ -1297,56 +1297,48 @@ window.confirmPrint = function () {
         return;
     }
 
-    // Convert strings to comparable integers YYYYMMDD
+    // 1. Calculate range
     const startInt = parseInt(startVal.replace(/-/g, ''), 10);
     const endInt = endVal ? parseInt(endVal.replace(/-/g, ''), 10) : null;
 
-    // 1. Hide unwanted rows
-    const rows = document.querySelectorAll('#schedule-body tr');
-    rows.forEach(row => {
-        // Temporarily show all for range filtering
-        row.classList.remove('past-hidden');
-        
-        const dateCell = row.cells[0]; // First cell is date
-        if (dateCell) {
-            const parts = dateCell.textContent.trim().split('.');
-            if (parts.length === 3) {
-                const dPadded = parts[0].padStart(2, '0');
-                const mPadded = parts[1].padStart(2, '0');
-                const yPadded = parts[2];
-                const rowInt = parseInt(`${yPadded}${mPadded}${dPadded}`, 10);
-
-                let hide = false;
-                if (rowInt < startInt) hide = true;
-                if (endInt && rowInt > endInt) hide = true;
-
-                if (hide) {
-                    row.classList.add('print-hidden');
-                } else {
-                    row.classList.remove('print-hidden');
-                }
-            }
-        }
-    });
-
-    // 2. Hide modal
+    // 2. Hide modal immediately
     closePrintModal();
 
-    // 3. Print
+    // 3. Optimized filtering using data attributes or indices
+    const rows = document.querySelectorAll('#schedule-body tr');
+    
+    // We use a small delay to let the modal close animation finish
     setTimeout(() => {
+        rows.forEach((row, index) => {
+            const slot = currentSchedule[index]; // Assuming table matches schedule order
+            if (!slot) return;
+
+            const rowInt = parseInt(slot.date.replace(/-/g, ''), 10);
+            let hide = false;
+            if (rowInt < startInt) hide = true;
+            if (endInt && rowInt > endInt) hide = true;
+
+            if (hide) {
+                row.classList.add('print-hidden');
+            } else {
+                row.classList.remove('print-hidden');
+                row.classList.remove('past-hidden'); // Force show even if it's a past row
+            }
+        });
+
+        // 4. Trigger print
         window.print();
 
-        // 4. Restore rows after print
+        // 5. Restore rows
         setTimeout(() => {
             rows.forEach(row => {
                 row.classList.remove('print-hidden');
-                // Restore past-hidden if needed
                 if (!showPast && row.classList.contains('past-row')) {
                     row.classList.add('past-hidden');
                 }
             });
-        }, 1000);
-    }, 100);
+        }, 500);
+    }, 50);
 }
 
 window.saveSchedule = async function () {
