@@ -775,7 +775,13 @@ window.filterLoginNames = function () {
 
     // Filter by name match
     const matches = currentEmployees.filter(emp => {
-        return emp.name.toLowerCase().includes(query);
+        const name = emp.name.toLowerCase();
+        const queryMatch = name.includes(query);
+        
+        // Special check for 'admin' and 'sekretariat' accounts
+        const isSpecialAccount = name === 'admin' || name === 'sekretariat' || name.includes('sekretariat');
+        
+        return queryMatch && (isSpecialAccount || String(emp.role || emp.rolle || "").toLowerCase().includes('admin') || String(emp.role || emp.rolle || "").toLowerCase().includes('sekretariat'));
     }).sort(sortEmployeesByName);
 
     if (matches.length > 0) {
