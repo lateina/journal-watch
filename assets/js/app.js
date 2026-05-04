@@ -55,8 +55,13 @@ async function init() {
         masterKey = storedKey;
         isAdmin = true; // If we have a key, we are admin
         document.getElementById('login-btn').classList.add('hidden');
-        const adminPanel = document.getElementById('admin-panel');
-        if (adminPanel) adminPanel.classList.remove('hidden');
+        const table = document.getElementById('schedule-table');
+        const controls = document.getElementById('schedule-controls');
+        if (table) table.classList.remove('hidden');
+        if (controls) {
+            controls.classList.remove('hidden');
+            controls.style.display = 'flex'; // Ensure flex layout is restored
+        }
     }
 
     setupTabs();
@@ -262,7 +267,14 @@ function showError(msg) {
 
 function renderSchedule() {
     const tbody = document.getElementById('schedule-body');
+    // Update UI visibility
     const table = document.getElementById('schedule-table');
+    const controls = document.getElementById('schedule-controls');
+    if (table) table.classList.remove('hidden');
+    if (controls) {
+        controls.classList.remove('hidden');
+        controls.style.display = 'flex';
+    }
     document.getElementById('loading').classList.add('hidden');
 
     // Hide error message on successful render
