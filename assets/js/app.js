@@ -426,7 +426,7 @@ function renderSchedule() {
                     .map(e => `<option value="${e.name}">${e.name}</option>`)
                     .join('');
 
-                return `<select class="edit-field swap-select" style="width:auto; min-width:100px;" onchange="handleSwap(${index}, this.value)">
+                return `<select class="edit-field swap-select" onchange="handleSwap(${index}, this.value)">
                         <option value="">🔄 Tausch</option>
                         ${swapOptions}
                     </select>`;
