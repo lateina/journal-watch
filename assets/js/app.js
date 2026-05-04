@@ -1,7 +1,5 @@
-// JSONBin Bins removed - now using Firestore
-// const SCHEDULE_BIN_ID = "699332e2ae596e708f2f7434"; // Schedule
-// const EMPLOYEES_BIN_ID = "699333dcd0ea881f40bf132f"; // Employees
-// const DISTRIBUTION_BIN_ID = "699c40edae596e708f42284d"; // Distribution
+// JSONBin Bins for Distribution (Shared with Urlaubsplaner V2)
+const DISTRIBUTION_BIN_ID = "699c40edae596e708f42284d";
 
 let currentSchedule = [];
 let currentEmployees = [];
@@ -134,19 +132,20 @@ async function loadEmployees() {
 
 async function loadDistribution() {
     try {
-        const docSnap = await db.collection('up_config').doc('jw_distribution').get();
-        if (docSnap.exists) {
-            currentDistribution = docSnap.data().data || [];
+        if (!masterKey) return; // Need key for JSONBin
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${DISTRIBUTION_BIN_ID}/latest`, {
+            headers: { "X-Master-Key": masterKey }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            currentDistribution = data.record || [];
         } else {
-            console.warn("No distribution found in Firestore.");
-            currentDistribution = [];
+            console.warn("Distribution not found on JSONBin.");
         }
         syncEmployeeIDs();
         renderDistribution();
     } catch (e) {
-        console.warn("Fehler beim Laden der Monatsverteilung:", e);
-        currentDistribution = [];
-        renderDistribution();
+        console.warn("Fehler beim Laden der Verteilung von JSONBin:", e);
     }
 }
 
@@ -1274,11 +1273,17 @@ window.saveSchedule = async function () {
             updatedAt: now
         }, { merge: true });
 
-        // 2. Save Distribution
-        await db.collection('up_config').doc('jw_distribution').set({
-            data: currentDistribution,
-            updatedAt: now
-        }, { merge: true });
+        // 2. Save Distribution back to JSONBin (Sync with Urlaubsplaner V2)
+        if (masterKey) {
+            await fetch(`https://api.jsonbin.io/v3/b/${DISTRIBUTION_BIN_ID}`, {
+                method: 'PUT',
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Master-Key": masterKey
+                },
+                body: JSON.stringify(currentDistribution)
+            });
+        }
 
         // 3. Save Employees (Shared with Urlaubsplaner)
         // Clean employees before saving (remove JW-only UI flags if any, though here we keep them for compatibility)
