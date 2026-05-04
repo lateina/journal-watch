@@ -1,0 +1,261 @@
+﻿2026-04-22T08:36:55.1346893Z Current runner version: '2.333.1'
+2026-04-22T08:36:55.1374166Z ##[group]Runner Image Provisioner
+2026-04-22T08:36:55.1375073Z Hosted Compute Agent
+2026-04-22T08:36:55.1375674Z Version: 20260213.493
+2026-04-22T08:36:55.1376423Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+2026-04-22T08:36:55.1377157Z Build Date: 2026-02-13T00:28:41Z
+2026-04-22T08:36:55.1377821Z Worker ID: {cdb05fc6-b343-49be-b099-46124d6128a9}
+2026-04-22T08:36:55.1378596Z Azure Region: centralus
+2026-04-22T08:36:55.1379161Z ##[endgroup]
+2026-04-22T08:36:55.1380728Z ##[group]Operating System
+2026-04-22T08:36:55.1381361Z Ubuntu
+2026-04-22T08:36:55.1382132Z 24.04.4
+2026-04-22T08:36:55.1382754Z LTS
+2026-04-22T08:36:55.1383285Z ##[endgroup]
+2026-04-22T08:36:55.1383861Z ##[group]Runner Image
+2026-04-22T08:36:55.1384492Z Image: ubuntu-24.04
+2026-04-22T08:36:55.1385047Z Version: 20260413.86.1
+2026-04-22T08:36:55.1386329Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260413.86/images/ubuntu/Ubuntu2404-Readme.md
+2026-04-22T08:36:55.1387861Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260413.86
+2026-04-22T08:36:55.1388903Z ##[endgroup]
+2026-04-22T08:36:55.1390079Z ##[group]GITHUB_TOKEN Permissions
+2026-04-22T08:36:55.1392972Z Contents: read
+2026-04-22T08:36:55.1393646Z Metadata: read
+2026-04-22T08:36:55.1394240Z Packages: read
+2026-04-22T08:36:55.1394849Z ##[endgroup]
+2026-04-22T08:36:55.1396905Z Secret source: Actions
+2026-04-22T08:36:55.1397858Z Prepare workflow directory
+2026-04-22T08:36:55.1733063Z Prepare all required actions
+2026-04-22T08:36:55.1772499Z Getting action download info
+2026-04-22T08:36:55.5834849Z Download action repository 'actions/checkout@v3' (SHA:f43a0e5ff2bd294095638e18286ca9a3d1956744)
+2026-04-22T08:36:55.6937155Z Download action repository 'actions/setup-python@v4' (SHA:7f4fc3e22c37d6ff65e88745f38bd3157c663f7c)
+2026-04-22T08:36:55.8745220Z Complete job name: check-and-send
+2026-04-22T08:36:55.9465243Z ##[group]Run actions/checkout@v3
+2026-04-22T08:36:55.9466209Z with:
+2026-04-22T08:36:55.9466703Z   repository: lateina/journal-watch
+2026-04-22T08:36:55.9467483Z   token: ***
+2026-04-22T08:36:55.9467928Z   ssh-strict: true
+2026-04-22T08:36:55.9468409Z   persist-credentials: true
+2026-04-22T08:36:55.9468913Z   clean: true
+2026-04-22T08:36:55.9469381Z   sparse-checkout-cone-mode: true
+2026-04-22T08:36:55.9469915Z   fetch-depth: 1
+2026-04-22T08:36:55.9470362Z   fetch-tags: false
+2026-04-22T08:36:55.9470830Z   lfs: false
+2026-04-22T08:36:55.9471265Z   submodules: false
+2026-04-22T08:36:55.9471945Z   set-safe-directory: true
+2026-04-22T08:36:55.9473079Z ##[endgroup]
+2026-04-22T08:36:56.0333074Z Syncing repository: lateina/journal-watch
+2026-04-22T08:36:56.0334947Z ##[group]Getting Git version info
+2026-04-22T08:36:56.0335801Z Working directory is '/home/runner/work/journal-watch/journal-watch'
+2026-04-22T08:36:56.0336924Z [command]/usr/bin/git version
+2026-04-22T08:36:56.0385167Z git version 2.53.0
+2026-04-22T08:36:56.0413073Z ##[endgroup]
+2026-04-22T08:36:56.0429260Z Temporarily overriding HOME='/home/runner/work/_temp/2cdc3de3-113d-4bed-8238-b331b120fb7e' before making global git config changes
+2026-04-22T08:36:56.0432469Z Adding repository directory to the temporary git global config as a safe directory
+2026-04-22T08:36:56.0435001Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/journal-watch/journal-watch
+2026-04-22T08:36:56.0465263Z Deleting the contents of '/home/runner/work/journal-watch/journal-watch'
+2026-04-22T08:36:56.0468500Z ##[group]Initializing the repository
+2026-04-22T08:36:56.0471534Z [command]/usr/bin/git init /home/runner/work/journal-watch/journal-watch
+2026-04-22T08:36:56.0571553Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-04-22T08:36:56.0573864Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-04-22T08:36:56.0575887Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-04-22T08:36:56.0577464Z hint: call:
+2026-04-22T08:36:56.0578728Z hint:
+2026-04-22T08:36:56.0579857Z hint: 	git config --global init.defaultBranch <name>
+2026-04-22T08:36:56.0581063Z hint:
+2026-04-22T08:36:56.0582654Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-04-22T08:36:56.0584647Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-04-22T08:36:56.0586148Z hint:
+2026-04-22T08:36:56.0586900Z hint: 	git branch -m <name>
+2026-04-22T08:36:56.0587781Z hint:
+2026-04-22T08:36:56.0589171Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-04-22T08:36:56.0590464Z Initialized empty Git repository in /home/runner/work/journal-watch/journal-watch/.git/
+2026-04-22T08:36:56.0592671Z [command]/usr/bin/git remote add origin https://github.com/lateina/journal-watch
+2026-04-22T08:36:56.0613514Z ##[endgroup]
+2026-04-22T08:36:56.0615005Z ##[group]Disabling automatic garbage collection
+2026-04-22T08:36:56.0616531Z [command]/usr/bin/git config --local gc.auto 0
+2026-04-22T08:36:56.0641920Z ##[endgroup]
+2026-04-22T08:36:56.0642721Z ##[group]Setting up auth
+2026-04-22T08:36:56.0647120Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-04-22T08:36:56.0673758Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-04-22T08:36:56.0952219Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-04-22T08:36:56.0977225Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-04-22T08:36:56.1196692Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-04-22T08:36:56.1229277Z ##[endgroup]
+2026-04-22T08:36:56.1230184Z ##[group]Fetching the repository
+2026-04-22T08:36:56.1239016Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +568cfb621ba4eb139f3e223eef80f6bd5cfe57a8:refs/remotes/origin/main
+2026-04-22T08:36:56.4328100Z remote: Enumerating objects: 30, done.        
+2026-04-22T08:36:56.4329028Z remote: Counting objects:   3% (1/30)        
+2026-04-22T08:36:56.4329738Z remote: Counting objects:   6% (2/30)        
+2026-04-22T08:36:56.4330432Z remote: Counting objects:  10% (3/30)        
+2026-04-22T08:36:56.4331130Z remote: Counting objects:  13% (4/30)        
+2026-04-22T08:36:56.4332169Z remote: Counting objects:  16% (5/30)        
+2026-04-22T08:36:56.4332894Z remote: Counting objects:  20% (6/30)        
+2026-04-22T08:36:56.4333586Z remote: Counting objects:  23% (7/30)        
+2026-04-22T08:36:56.4334272Z remote: Counting objects:  26% (8/30)        
+2026-04-22T08:36:56.4335006Z remote: Counting objects:  30% (9/30)        
+2026-04-22T08:36:56.4335672Z remote: Counting objects:  33% (10/30)        
+2026-04-22T08:36:56.4336320Z remote: Counting objects:  36% (11/30)        
+2026-04-22T08:36:56.4336944Z remote: Counting objects:  40% (12/30)        
+2026-04-22T08:36:56.4337565Z remote: Counting objects:  43% (13/30)        
+2026-04-22T08:36:56.4338194Z remote: Counting objects:  46% (14/30)        
+2026-04-22T08:36:56.4338825Z remote: Counting objects:  50% (15/30)        
+2026-04-22T08:36:56.4339457Z remote: Counting objects:  53% (16/30)        
+2026-04-22T08:36:56.4340098Z remote: Counting objects:  56% (17/30)        
+2026-04-22T08:36:56.4340730Z remote: Counting objects:  60% (18/30)        
+2026-04-22T08:36:56.4341362Z remote: Counting objects:  63% (19/30)        
+2026-04-22T08:36:56.4342263Z remote: Counting objects:  66% (20/30)        
+2026-04-22T08:36:56.4342909Z remote: Counting objects:  70% (21/30)        
+2026-04-22T08:36:56.4343537Z remote: Counting objects:  73% (22/30)        
+2026-04-22T08:36:56.4344167Z remote: Counting objects:  76% (23/30)        
+2026-04-22T08:36:56.4345073Z remote: Counting objects:  80% (24/30)        
+2026-04-22T08:36:56.4345704Z remote: Counting objects:  83% (25/30)        
+2026-04-22T08:36:56.4346325Z remote: Counting objects:  86% (26/30)        
+2026-04-22T08:36:56.4346941Z remote: Counting objects:  90% (27/30)        
+2026-04-22T08:36:56.4347566Z remote: Counting objects:  93% (28/30)        
+2026-04-22T08:36:56.4348228Z remote: Counting objects:  96% (29/30)        
+2026-04-22T08:36:56.4348845Z remote: Counting objects: 100% (30/30)        
+2026-04-22T08:36:56.4349501Z remote: Counting objects: 100% (30/30), done.        
+2026-04-22T08:36:56.4350185Z remote: Compressing objects:   4% (1/25)        
+2026-04-22T08:36:56.4371896Z remote: Compressing objects:   8% (2/25)        
+2026-04-22T08:36:56.4372955Z remote: Compressing objects:  12% (3/25)        
+2026-04-22T08:36:56.4373625Z remote: Compressing objects:  16% (4/25)        
+2026-04-22T08:36:56.4374299Z remote: Compressing objects:  20% (5/25)        
+2026-04-22T08:36:56.4374960Z remote: Compressing objects:  24% (6/25)        
+2026-04-22T08:36:56.4375631Z remote: Compressing objects:  28% (7/25)        
+2026-04-22T08:36:56.4376279Z remote: Compressing objects:  32% (8/25)        
+2026-04-22T08:36:56.4376931Z remote: Compressing objects:  36% (9/25)        
+2026-04-22T08:36:56.4377583Z remote: Compressing objects:  40% (10/25)        
+2026-04-22T08:36:56.4378254Z remote: Compressing objects:  44% (11/25)        
+2026-04-22T08:36:56.4378935Z remote: Compressing objects:  48% (12/25)        
+2026-04-22T08:36:56.4379603Z remote: Compressing objects:  52% (13/25)        
+2026-04-22T08:36:56.4380255Z remote: Compressing objects:  56% (14/25)        
+2026-04-22T08:36:56.4380908Z remote: Compressing objects:  60% (15/25)        
+2026-04-22T08:36:56.4411093Z remote: Compressing objects:  64% (16/25)        
+2026-04-22T08:36:56.4476329Z remote: Compressing objects:  68% (17/25)        
+2026-04-22T08:36:56.4481922Z remote: Compressing objects:  72% (18/25)        
+2026-04-22T08:36:56.4483759Z remote: Compressing objects:  76% (19/25)        
+2026-04-22T08:36:56.4485004Z remote: Compressing objects:  80% (20/25)        
+2026-04-22T08:36:56.4485774Z remote: Compressing objects:  84% (21/25)        
+2026-04-22T08:36:56.4486462Z remote: Compressing objects:  88% (22/25)        
+2026-04-22T08:36:56.4487162Z remote: Compressing objects:  92% (23/25)        
+2026-04-22T08:36:56.4487847Z remote: Compressing objects:  96% (24/25)        
+2026-04-22T08:36:56.4488538Z remote: Compressing objects: 100% (25/25)        
+2026-04-22T08:36:56.4489264Z remote: Compressing objects: 100% (25/25), done.        
+2026-04-22T08:36:56.6187628Z remote: Total 30 (delta 2), reused 20 (delta 1), pack-reused 0 (from 0)        
+2026-04-22T08:36:56.6258908Z From https://github.com/lateina/journal-watch
+2026-04-22T08:36:56.6260307Z  * [new ref]         568cfb621ba4eb139f3e223eef80f6bd5cfe57a8 -> origin/main
+2026-04-22T08:36:56.6287869Z ##[endgroup]
+2026-04-22T08:36:56.6289200Z ##[group]Determining the checkout info
+2026-04-22T08:36:56.6291228Z ##[endgroup]
+2026-04-22T08:36:56.6293020Z ##[group]Checking out the ref
+2026-04-22T08:36:56.6295409Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-04-22T08:36:56.6391428Z Switched to a new branch 'main'
+2026-04-22T08:36:56.6395088Z branch 'main' set up to track 'origin/main'.
+2026-04-22T08:36:56.6402546Z ##[endgroup]
+2026-04-22T08:36:56.6433346Z [command]/usr/bin/git log -1 --format='%H'
+2026-04-22T08:36:56.6454309Z '568cfb621ba4eb139f3e223eef80f6bd5cfe57a8'
+2026-04-22T08:36:56.6771178Z ##[group]Run actions/setup-python@v4
+2026-04-22T08:36:56.6772710Z with:
+2026-04-22T08:36:56.6773625Z   python-version: 3.9
+2026-04-22T08:36:56.6774667Z   check-latest: false
+2026-04-22T08:36:56.6776009Z   token: ***
+2026-04-22T08:36:56.6776949Z   update-environment: true
+2026-04-22T08:36:56.6778073Z   allow-prereleases: false
+2026-04-22T08:36:56.6779142Z ##[endgroup]
+2026-04-22T08:36:56.8542835Z ##[group]Installed versions
+2026-04-22T08:36:56.8633166Z Version 3.9 was not found in the local cache
+2026-04-22T08:36:57.4654582Z Version 3.9 is available for downloading
+2026-04-22T08:36:57.4657474Z Download from "https://github.com/actions/python-versions/releases/download/3.9.25-19039189640/python-3.9.25-linux-24.04-x64.tar.gz"
+2026-04-22T08:36:58.3425608Z Extract downloaded archive
+2026-04-22T08:36:58.3560773Z [command]/usr/bin/tar xz --warning=no-unknown-keyword -C /home/runner/work/_temp/f2a4179b-47ce-42fe-8281-7a26f6587a29 -f /home/runner/work/_temp/86913894-7864-40dd-bb86-4172698ef223
+2026-04-22T08:36:59.7303994Z Execute installation script
+2026-04-22T08:36:59.7393207Z Check if Python hostedtoolcache folder exist...
+2026-04-22T08:36:59.7394238Z Create Python 3.9.25 folder
+2026-04-22T08:36:59.7409681Z Copy Python binaries to hostedtoolcache folder
+2026-04-22T08:37:00.1883685Z Create additional symlinks (Required for the UsePythonVersion Azure Pipelines task and the setup-python GitHub Action)
+2026-04-22T08:37:00.1927572Z Upgrading pip...
+2026-04-22T08:37:02.3639233Z Looking in links: /tmp/tmp4y4mt19q
+2026-04-22T08:37:02.3644627Z Requirement already satisfied: setuptools in /opt/hostedtoolcache/Python/3.9.25/x64/lib/python3.9/site-packages (79.0.1)
+2026-04-22T08:37:02.3650397Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.9.25/x64/lib/python3.9/site-packages (23.0.1)
+2026-04-22T08:37:03.5858223Z Collecting pip
+2026-04-22T08:37:03.6393841Z Downloading pip-26.0.1-py3-none-any.whl (1.8 MB)
+2026-04-22T08:37:03.7210626Z ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 22.8 MB/s eta 0:00:00
+2026-04-22T08:37:03.7212065Z 
+2026-04-22T08:37:03.7818316Z Installing collected packages: pip
+2026-04-22T08:37:03.7820401Z Attempting uninstall: pip
+2026-04-22T08:37:03.7892195Z Found existing installation: pip 23.0.1
+2026-04-22T08:37:03.9619484Z Uninstalling pip-23.0.1:
+2026-04-22T08:37:03.9690452Z Successfully uninstalled pip-23.0.1
+2026-04-22T08:37:04.7925435Z Successfully installed pip-26.0.1
+2026-04-22T08:37:04.8418413Z Create complete file
+2026-04-22T08:37:04.8476265Z Successfully set up CPython (3.9.25)
+2026-04-22T08:37:04.8477260Z ##[endgroup]
+2026-04-22T08:37:04.8624892Z ##[group]Run python -m pip install --upgrade pip
+2026-04-22T08:37:04.8625369Z [36;1mpython -m pip install --upgrade pip[0m
+2026-04-22T08:37:04.8625693Z [36;1mpip install requests[0m
+2026-04-22T08:37:04.8653168Z shell: /usr/bin/bash -e {0}
+2026-04-22T08:37:04.8653439Z env:
+2026-04-22T08:37:04.8653747Z   pythonLocation: /opt/hostedtoolcache/Python/3.9.25/x64
+2026-04-22T08:37:04.8654191Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.9.25/x64/lib/pkgconfig
+2026-04-22T08:37:04.8654654Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.9.25/x64
+2026-04-22T08:37:04.8655034Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.9.25/x64
+2026-04-22T08:37:04.8655409Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.9.25/x64
+2026-04-22T08:37:04.8655782Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.9.25/x64/lib
+2026-04-22T08:37:04.8656101Z ##[endgroup]
+2026-04-22T08:37:05.1831216Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.9.25/x64/lib/python3.9/site-packages (26.0.1)
+2026-04-22T08:37:05.8392858Z Collecting requests
+2026-04-22T08:37:05.9309311Z   Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+2026-04-22T08:37:06.1002179Z Collecting charset_normalizer<4,>=2 (from requests)
+2026-04-22T08:37:06.1270575Z   Downloading charset_normalizer-3.4.7-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+2026-04-22T08:37:06.1747596Z Collecting idna<4,>=2.5 (from requests)
+2026-04-22T08:37:06.1993494Z   Downloading idna-3.12-py3-none-any.whl.metadata (8.0 kB)
+2026-04-22T08:37:06.2374846Z Collecting urllib3<3,>=1.21.1 (from requests)
+2026-04-22T08:37:06.2624957Z   Downloading urllib3-2.6.3-py3-none-any.whl.metadata (6.9 kB)
+2026-04-22T08:37:06.2949970Z Collecting certifi>=2017.4.17 (from requests)
+2026-04-22T08:37:06.3198095Z   Downloading certifi-2026.2.25-py3-none-any.whl.metadata (2.5 kB)
+2026-04-22T08:37:06.3484785Z Downloading requests-2.32.5-py3-none-any.whl (64 kB)
+2026-04-22T08:37:06.3846974Z Downloading charset_normalizer-3.4.7-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (208 kB)
+2026-04-22T08:37:06.4563577Z Downloading idna-3.12-py3-none-any.whl (68 kB)
+2026-04-22T08:37:06.4849788Z Downloading urllib3-2.6.3-py3-none-any.whl (131 kB)
+2026-04-22T08:37:06.5166240Z Downloading certifi-2026.2.25-py3-none-any.whl (153 kB)
+2026-04-22T08:37:06.5490545Z Installing collected packages: urllib3, idna, charset_normalizer, certifi, requests
+2026-04-22T08:37:06.7831332Z 
+2026-04-22T08:37:06.7852025Z Successfully installed certifi-2026.2.25 charset_normalizer-3.4.7 idna-3.12 requests-2.32.5 urllib3-2.6.3
+2026-04-22T08:37:06.8361390Z ##[group]Run python scripts/send_reminders.py
+2026-04-22T08:37:06.8362181Z [36;1mpython scripts/send_reminders.py[0m
+2026-04-22T08:37:06.8383916Z shell: /usr/bin/bash -e {0}
+2026-04-22T08:37:06.8384163Z env:
+2026-04-22T08:37:06.8384429Z   pythonLocation: /opt/hostedtoolcache/Python/3.9.25/x64
+2026-04-22T08:37:06.8384868Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.9.25/x64/lib/pkgconfig
+2026-04-22T08:37:06.8385287Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.9.25/x64
+2026-04-22T08:37:06.8385661Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.9.25/x64
+2026-04-22T08:37:06.8386032Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.9.25/x64
+2026-04-22T08:37:06.8386413Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.9.25/x64/lib
+2026-04-22T08:37:06.8387031Z   JSONBIN_API_KEY: ***
+2026-04-22T08:37:06.8387285Z   SCHEDULE_BIN_ID: ***
+2026-04-22T08:37:06.8387548Z   EMPLOYEES_BIN_ID: ***
+2026-04-22T08:37:06.8387820Z   EMAIL_HOST_USER: ***
+2026-04-22T08:37:06.8388112Z   EMAIL_HOST_PASSWORD: ***
+2026-04-22T08:37:06.8388332Z ##[endgroup]
+2026-04-22T08:37:20.8497015Z Fetching data...
+2026-04-22T08:37:20.8497794Z Checking for presentations next week: 2026-04-27 to 2026-05-01...
+2026-04-22T08:37:20.8498783Z Found slot for Anett Lindner on 2026-04-27 (Anett.lindner@klinik.uni-regensburg.de)
+2026-04-22T08:37:20.8500315Z Failed to send email to Anett.lindner@klinik.uni-regensburg.de: (534, b'5.7.9 Please log in with your web browser and then try again. For more\n5.7.9 information, go to\n5.7.9  https://support.google.com/mail/?p=WebLoginRequired 5614622812f47-479f4a284d8sm2412652b6e.15 - gsmtp')
+2026-04-22T08:37:20.8502110Z Found slot for Christian Schulz on 2026-04-29 (christian.schulz@klinik.uni-regensburg.de)
+2026-04-22T08:37:20.8503628Z Failed to send email to christian.schulz@klinik.uni-regensburg.de: (534, b'5.7.9 Please log in with your web browser and then try again. For more\n5.7.9 information, go to\n5.7.9  https://support.google.com/mail/?p=WebLoginRequired 586e51a60fabf-42b9acc056esm14533613fac.17 - gsmtp')
+2026-04-22T08:37:20.8757738Z Post job cleanup.
+2026-04-22T08:37:21.0390875Z Post job cleanup.
+2026-04-22T08:37:21.1095953Z [command]/usr/bin/git version
+2026-04-22T08:37:21.1129940Z git version 2.53.0
+2026-04-22T08:37:21.1175402Z Temporarily overriding HOME='/home/runner/work/_temp/0a653f50-c4b1-48db-aa7a-e9a2896a6251' before making global git config changes
+2026-04-22T08:37:21.1176820Z Adding repository directory to the temporary git global config as a safe directory
+2026-04-22T08:37:21.1180388Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/journal-watch/journal-watch
+2026-04-22T08:37:21.1210425Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-04-22T08:37:21.1239708Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-04-22T08:37:21.1455585Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-04-22T08:37:21.1474509Z http.https://github.com/.extraheader
+2026-04-22T08:37:21.1485471Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-04-22T08:37:21.1513191Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-04-22T08:37:21.1846692Z Cleaning up orphan processes
+2026-04-22T08:37:21.2116749Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v3, actions/setup-python@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
