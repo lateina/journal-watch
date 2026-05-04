@@ -400,9 +400,15 @@ function renderSchedule() {
                     options += `<option value="${slot.presenter}" selected>${slot.presenter} (Archiv)</option>`;
                 }
 
-                presenterCell = `<select class="edit-field" onchange="updateSlot(${index}, 'presenter', this.value)">${options}</select>`;
+                presenterCell = `
+                    <select class="edit-field" onchange="updateSlot(${index}, 'presenter', this.value)">${options}</select>
+                    <span class="print-only-value" style="display:none;">${slot.presenter || ''}</span>
+                `;
             }
-            topicCell = `<input class="edit-field" value="${slot.topic || ''}" onchange="updateSlot(${index}, 'topic', this.value)" placeholder="Thema">`;
+            topicCell = `
+                <input class="edit-field" value="${slot.topic || ''}" onchange="updateSlot(${index}, 'topic', this.value)" placeholder="Thema">
+                <span class="print-only-value" style="display:none;">${slot.topic || ''}</span>
+            `;
         }
 
         row.innerHTML = `
