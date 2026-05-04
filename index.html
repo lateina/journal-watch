@@ -1,139 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Journal Watch Plan</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=1.1">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        /* Admin UI Styles */
-        #admin-controls {
-            margin-top: 1rem;
-            text-align: center;
-            /* border-top: 1px solid #eee;  Removed for header */
-            /* padding-top: 1rem; Removed for header */
-        }
-
-        .edit-btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 0.8rem;
-        }
-
-        .save-btn {
-            background: #2ecc71;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            border-radius: 4px;
-            margin-top: 1rem;
-        }
-
-        .delete-btn {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            margin-left: 5px;
-        }
-
-        input.edit-field {
-            width: 100%;
-            padding: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        #login-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        #login-modal.hidden {
-            display: none !important;
-        }
-
-        #login-box {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 1rem;
-            color: #666;
-            border-bottom: 2px solid transparent;
-        }
-
-        .tab-btn.active {
-            color: #3498db;
-            border-bottom: 2px solid #3498db;
-            font-weight: 600;
-        }
-
-        .tab-content.hidden {
-            display: none;
-        }
-
-        #add-employee-btn {
-            margin-top: 10px;
-            padding: 8px 15px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-    </style>
+    <title>Journal Watch | Klinik für Innere Medizin II</title>
+    <link rel="stylesheet" href="assets/css/style.css?v=1.2">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div class="container">
         <header>
-            <h1>Journal Watch Plan</h1>
-            <p>Kommende Präsentationen</p>
+            <h1>Journal Watch</h1>
+            <p>Fortbildung der Klinik für Innere Medizin II</p>
+            
             <div id="admin-controls">
-                <button id="login-btn">Bearbeiter Login</button>
+                <button id="login-btn" class="btn btn-secondary" onclick="showLogin()">🔐 Bearbeiter Login</button>
                 <div id="admin-panel" class="hidden">
-                    <span style="font-size: 0.9rem; margin-right: 10px;">Bearbeitermodus</span>
-                    <button class="save-btn" style="margin-top: 0; padding: 5px 15px;">Speichern</button>
-                    <button class="delete-btn" onclick="clearFutureQuarters()"
-                        style="margin-left: 5px; padding: 5px 15px;">Folgequartale löschen</button>
-                    <button class="edit-btn" onclick="autoDistribute()"
-                        style="margin-left: 5px; background: #9b59b6;">Auto-Verteilen</button>
-                    <button id="logout-btn" style="margin-left: 5px; padding: 5px 10px;">Logout</button>
+                    <button class="btn btn-success save-btn">💾 Speichern</button>
+                    <button class="btn btn-danger" onclick="clearFutureQuarters()">🗑️ Folgequartale löschen</button>
+                    <button class="btn btn-primary" onclick="autoDistribute()" style="background: var(--accent);">✨ Auto-Verteilen</button>
+                    <button id="logout-btn" class="btn btn-secondary">🚪 Logout</button>
                 </div>
             </div>
         </header>
@@ -144,195 +32,193 @@
             <button class="tab-btn hidden" data-tab="distribution">Monatsverteilung</button>
         </div>
 
-        <main>
-            <div id="loading">Lade Daten...</div>
-            <div id="error-message" class="hidden" style="text-align: center; margin-top: 50px;">
-                <p>Bitte einloggen, um den Plan zu sehen.</p>
-                <button onclick="showLogin()"
-                    style="margin-top: 10px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Login</button>
+        <main class="main-card">
+            <div id="loading">
+                <div class="center-text">
+                    <p>⏳ Lade Daten...</p>
+                </div>
+            </div>
+
+            <div id="error-message" class="hidden center-text">
+                <p>⚠️ Bitte loggen Sie sich ein, um den Plan zu sehen.</p>
+                <button class="btn btn-primary" onclick="showLogin()" style="margin-top: 1rem;">Login</button>
             </div>
 
             <!-- Schedule Tab -->
             <div id="tab-schedule" class="tab-content">
-                <div style="text-align: right; margin-bottom: 10px;">
-                    <button id="print-btn" class="edit-btn" style="background: #7f8c8d;">🖨️ Drucken</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                    <div class="switch-container no-print">
+                        <label class="switch">
+                            <input type="checkbox" id="show-past-toggle" onchange="toggleShowPast(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                        <span>Vergangene Termine anzeigen</span>
+                    </div>
+                    <button id="print-btn" class="btn btn-secondary no-print">🖨️ Druck-Export</button>
                 </div>
-                <table id="schedule-table" class="hidden">
-                    <thead>
-                        <tr class="print-header-row">
-                            <th colspan="8">
-                                <div id="print-header-content">
-                                    <div class="print-header-logos">
-                                        <img src="assets/img/herzzentrum_logo.jpg" alt="Herzzentrum Logo"
-                                            class="print-logo-left">
-                                        <img src="assets/img/ukr_logo_1.png" alt="UKR Logo" class="print-logo-right">
+
+                <div class="table-container">
+                    <table id="schedule-table" class="hidden">
+                        <thead>
+                            <tr class="print-header-row">
+                                <th colspan="8">
+                                    <div id="print-header-content">
+                                        <div class="print-header-logos">
+                                            <img src="assets/img/herzzentrum_logo.jpg" alt="Herzzentrum Logo" class="print-logo-left">
+                                            <img src="assets/img/ukr_logo_1.png" alt="UKR Logo" class="print-logo-right">
+                                        </div>
+                                        <div class="print-header-info">
+                                            <p>Klinik und Poliklinik für Innere Medizin II<br>
+                                                (Kardiologie, Pneumologie und Internistische Intensivmedizin)<br>
+                                                <strong>Direktor: Universitätsprofessor Dr. med. Lars S. Maier</strong>
+                                            </p>
+                                        </div>
+                                        <div class="print-header-title">
+                                            <h1>JOURNAL WATCH</h1>
+                                            <h2>INTERNISTISCHE FALLBESPRECHUNG</h2>
+                                            <p id="print-stand-date">Stand: --.--.----</p>
+                                        </div>
                                     </div>
-                                    <div class="print-header-info">
-                                        <p>Klinik und Poliklinik für Innere Medizin II<br>
-                                            (Kardiologie, Pneumologie und Internistische Intensivmedizin)<br>
-                                            <strong>Direktor: Universitätsprofessor Dr. med. Lars S. Maier</strong>
-                                        </p>
+                                </th>
+                            </tr>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Tag</th>
+                                <th>Referent</th>
+                                <th class="center-text stats-tooltip" data-tooltip="Gehalten / Vergessen">Stats</th>
+                                <th class="center-text">Vergessen</th>
+                                <th class="center-text">Ersatz</th>
+                                <th class="center-text">Tausch</th>
+                                <th>Thema</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule-body">
+                            <!-- Rows will be inserted here -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="print-footer-row">
+                                <td colspan="8">
+                                    <div id="print-footer-content">
+                                        <p style="margin-bottom: 30px; border-bottom: 1px solid #000; width: 250px;"></p>
+                                        <p><strong>Prof. Dr. med. Stefan Wagner</strong></p>
                                     </div>
-                                    <div class="print-header-title">
-                                        <h1>JOURNAL WATCH</h1>
-                                        <h2>INTERNISTISCHE FALLBESPRECHUNG</h2>
-                                        <p id="print-stand-date">Stand: --.--.----</p>
-                                    </div>
-                                </div>
-                            </th>
-                        </tr>
-                        <tr>
-                            <th>Datum</th>
-                            <th>Tag</th>
-                            <th>Referent</th>
-                            <th class="col-narrow center-text stats-tooltip">Statistik</th>
-                            <th class="col-narrow center-text">Vergessen?</th>
-                            <th class="col-narrow center-text">Ersatz?</th>
-                            <th class="center-text">Tausch</th>
-                            <th>Thema (Optional)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="schedule-body">
-                        <!-- Rows will be inserted here -->
-                    </tbody>
-                    <tfoot>
-                        <tr class="print-footer-row">
-                            <td colspan="7">
-                                <div id="print-footer-content">
-                                    <p style="margin-bottom: 30px;">
-                                        ______________________________________________________</p>
-                                    <p><strong>Prof. Dr. med. Stefan Wagner</strong></p>
-                                </div>
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
 
             <!-- Employee Tab -->
             <div id="tab-employees" class="tab-content hidden">
-                <div id="bulk-import-section" class="hidden"
-                    style="margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 20px;">
-                    <h4>Massenimport</h4>
-                    <p style="font-size: 0.9em; color: #666;">Füge hier eine Liste von Namen und E-Mails ein (eine
-                        Person pro Zeile).<br>Wenn nur die E-Mail angegeben wird (z.B. vorname.nachname@ukr.de), wird
-                        der Name automatisch generiert.</p>
-                    <textarea id="bulk-import-text" rows="5" style="width: 100%; padding: 5px; margin-bottom: 10px;"
-                        placeholder="Max Mustermann max@beispiel.de&#10;vorname.nachname@ukr.de"></textarea>
-                    <button onclick="parseEmployeeInput()"
-                        style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Importieren</button>
+                <div id="bulk-import-section" class="hidden" style="margin-bottom: 2rem; background: #f8fafc; padding: 1.5rem; border-radius: 1rem;">
+                    <h4 style="margin-bottom: 0.5rem;">Mitarbeiter-Import</h4>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                        Namen und E-Mails pro Zeile einfügen. Automatisches Mapping für ukr.de Adressen aktiv.
+                    </p>
+                    <textarea id="bulk-import-text" rows="4" class="edit-field" style="margin-bottom: 1rem;" placeholder="Max Mustermann max@beispiel.de"></textarea>
+                    <button class="btn btn-primary" onclick="parseEmployeeInput()">🚀 Importieren</button>
                 </div>
-                <table id="employee-table" class="hidden">
-                    <thead>
-                        <tr>
-                            <th class="col-id">ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>OA</th>
-                            <th class="custom-tooltip"
-                                data-tooltip="Die Checkbox blendet Mitarbeiter temporär aus, die aktuell keine Fortbildungen übernehmen (z. B. durch Rotationen in andere Abteilungen oder längere Abwesenheit)">
-                                Aktiv</th>
-                            <th class="admin-col hidden">Aktion</th>
-                        </tr>
-                    </thead>
-                    <tbody id="employee-body">
-                        <!-- Rows will be inserted here -->
-                    </tbody>
-                </table>
 
-                <button id="add-employee-btn" class="hidden" onclick="addEmployee()">+ Neuer Mitarbeiter</button>
+                <div class="table-container">
+                    <table id="employee-table" class="hidden">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th class="center-text">OA</th>
+                                <th class="center-text">Aktiv</th>
+                                <th class="admin-col hidden">Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employee-body">
+                            <!-- Rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <button id="add-employee-btn" class="btn btn-primary hidden" onclick="addEmployee()">➕ Neuer Mitarbeiter</button>
+                </div>
             </div>
 
             <!-- Distribution Tab -->
             <div id="tab-distribution" class="tab-content hidden">
-                <table id="distribution-table" class="hidden">
-                    <thead>
-                        <tr>
-                            <th>Monat</th>
-                            <th>Bereich</th>
-                            <th>Mitarbeiter ID</th>
-                            <th>Mitarbeiter Name</th>
-                        </tr>
-                    </thead>
-                    <tbody id="distribution-body">
-                        <!-- Rows will be inserted here -->
-                    </tbody>
-                </table>
+                <div class="table-container">
+                    <table id="distribution-table" class="hidden">
+                        <thead>
+                            <tr>
+                                <th>Monat</th>
+                                <th>Bereich</th>
+                                <th>ID</th>
+                                <th>Name</th>
+                            </tr>
+                        </thead>
+                        <tbody id="distribution-body">
+                            <!-- Rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </main>
 
-        <footer>
-            <p>&copy; 2026 Stefan Wagner</p>
+        <footer class="center-text" style="color: var(--text-muted); font-size: 0.875rem; margin-top: 2rem; padding-bottom: 2rem;">
+            <p>&copy; 2026 Prof. Dr. med. Stefan Wagner | Journal Watch Management System</p>
         </footer>
     </div>
 
-    <script>
-        window.onerror = function (msg, url, line) {
-            alert("Fehler: " + msg + "\nZeile: " + line);
-            return false;
-        };
-    </script>
+    <!-- Modals -->
+    <div id="login-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>🔐 Admin Login</h3>
+            <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Geben Sie den Master Key ein, um den Plan zu bearbeiten.</p>
+            <input type="password" id="password-input" class="edit-field" style="margin-bottom: 1rem; padding: 0.75rem;" placeholder="••••••••">
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="hideLogin()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="checkLogin()">Einloggen</button>
+            </div>
+            <p id="login-error" style="color: var(--danger); font-size: 0.85rem; margin-top: 1rem; display: none; font-weight: 600;">❌ Ungültiger Key!</p>
+        </div>
+    </div>
 
-    <!-- Print Modal -->
-    <div id="print-modal" class="hidden"
-        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
-        <div
-            style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); text-align: center; width: 300px;">
-            <h3>Zeitraum drucken</h3>
-            <div style="margin: 15px 0; text-align: left;">
-                <label style="display:block; margin-bottom:5px;">Von:</label>
+    <div id="print-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>🖨️ Zeitraum drucken</h3>
+            <div style="margin-bottom: 1rem;">
+                <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:0.25rem;">Von:</label>
                 <input type="date" id="print-start" class="edit-field">
             </div>
-            <div style="margin: 15px 0; text-align: left;">
-                <label style="display:block; margin-bottom:5px;">Bis:</label>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display:block; font-weight:600; font-size:0.85rem; margin-bottom:0.25rem;">Bis:</label>
                 <input type="date" id="print-end" class="edit-field">
             </div>
-            <div style="margin-top: 20px;">
-                <button onclick="confirmPrint()"
-                    style="background: #2ecc71; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Drucken</button>
-                <button onclick="closePrintModal()"
-                    style="margin-left: 10px; padding: 8px 15px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">Abbrechen</button>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closePrintModal()">Abbrechen</button>
+                <button class="btn btn-success" onclick="confirmPrint()">Drucken</button>
             </div>
         </div>
     </div>
 
-    <!-- Swap Selection Modal -->
-    <div id="swap-selection-modal" class="hidden"
-        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1001;">
-        <div
-            style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); width: 400px; max-height: 80vh; overflow-y: auto;">
-            <h3 id="swap-modal-title">Termin zum Tauschen wählen</h3>
-            <p id="swap-modal-desc" style="font-size: 0.9em; color: #666; margin-bottom: 15px;"></p>
-            <div id="swap-options-list" style="text-align: left; margin-bottom: 20px;">
-                <!-- Options will be dynamic -->
+    <div id="swap-selection-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 id="swap-modal-title">Termin tauschen</h3>
+            <p id="swap-modal-desc" style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-muted);"></p>
+            <div id="swap-options-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 1.5rem; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.5rem;">
+                <!-- Options dynamic -->
             </div>
-            <div style="text-align: center;">
-                <button id="cancel-swap-btn" onclick="closeSwapSelectionModal()"
-                    style="padding: 8px 15px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">Abbrechen</button>
+            <div class="center-text">
+                <button class="btn btn-secondary" onclick="closeSwapSelectionModal()">Abbrechen</button>
             </div>
         </div>
     </div>
 
-    <!-- Login Modal -->
-    <div id="login-modal" class="hidden">
-        <div id="login-box">
-            <h3>Login</h3>
-            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">Bitte Master Key eingeben</p>
-            <input type="password" id="password-input" placeholder="Master Key (API Key)">
-            <button onclick="checkLogin()">Login</button>
-            <button onclick="hideLogin()">Abbrechen</button>
-            <p id="login-error" style="color:red; display:none;">Ungültiger Key!</p>
-        </div>
-    </div>
-
-    <!-- Firebase SDK (Compat Version) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    
-    <!-- App Config -->
     <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/app.js?v=1.2"></script>
+    <script src="assets/js/app.js?v=1.3"></script>
 </body>
 
 </html>

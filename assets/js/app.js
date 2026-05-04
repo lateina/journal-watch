@@ -9,6 +9,12 @@ let currentDistribution = [];
 let isAdmin = false;
 let masterKey = null; // Renamed from apiKey to avoid confusion with Firebase API Key
 let hasUnsavedChanges = false;
+let showPast = false;
+
+window.toggleShowPast = function (val) {
+    showPast = val;
+    renderSchedule();
+}
 
 window.addEventListener('beforeunload', (e) => {
     if (hasUnsavedChanges) {
@@ -302,18 +308,20 @@ function renderSchedule() {
     });
 
     currentSchedule.forEach((slot, index) => {
-        const row = document.createElement('tr');
         const dateObj = new Date(slot.date);
         const dayName = dateObj.toLocaleDateString('de-DE', { weekday: 'long' });
 
+        // Skip past dates if toggle is OFF (but always show in admin mode? No, follow the toggle)
+        if (!showPast && slot.date < today) return;
+
+        const row = document.createElement('tr');
         // Check for Holiday / Vacation
         const holidayName = checkHoliday(dateObj);
 
-        let presenterCell = slot.presenter || '<span style="color:#ccc">Frei</span>';
+        let presenterCell = slot.presenter || '<span style="color:#cbd5e1">Frei</span>';
         let topicCell = slot.topic || '';
         let isHoliday = false;
-        let countCell = "";
-        let forgottenCell = "";
+        let forbiddenCell = "";
         let ersatzCell = "";
         let combinedStatsCell = "";
 
@@ -329,9 +337,7 @@ function renderSchedule() {
             const count = (slot.presenter && stats[slot.presenter]) ? stats[slot.presenter] : 0;
             const fCount = (slot.presenter && forgottenStats[slot.presenter]) ? forgottenStats[slot.presenter] : 0;
 
-            // Format: "Held / Forgotten"
-            // Highlight forgotten count in red if > 0
-            const fCountDisplay = fCount > 0 ? `<span style="color:red; font-weight:bold;">${fCount}</span>` : "0";
+            const fCountDisplay = fCount > 0 ? `<span style="color:var(--danger); font-weight:800;">${fCount}</span>` : "0";
             combinedStatsCell = `${count} / ${fCountDisplay}`;
 
             // Forgotten Checkbox
@@ -339,7 +345,7 @@ function renderSchedule() {
                 const checked = slot.forgotten ? 'checked' : '';
                 forgottenCell = `<input type="checkbox" ${checked} onchange="toggleForgotten(${index}, this.checked)">`;
             } else {
-                forgottenCell = slot.forgotten ? "Ja" : "";
+                forgottenCell = slot.forgotten ? "❌" : "";
             }
 
             if (slot.forgotten) row.classList.add('forgotten-row');
@@ -349,7 +355,7 @@ function renderSchedule() {
                 const checked = slot.isNachholtermin ? 'checked' : '';
                 ersatzCell = `<input type="checkbox" ${checked} onchange="toggleErsatztermin(${index}, this.checked)">`;
             } else {
-                ersatzCell = slot.isNachholtermin ? "Ja" : "";
+                ersatzCell = slot.isNachholtermin ? "✅" : "";
             }
 
             // specific check for OA
@@ -363,21 +369,16 @@ function renderSchedule() {
 
         if (isAdmin && !isHoliday) {
             if (slot.forgotten && slot.presenter) {
-                // If forgotten, show static name with strikethrough
-                presenterCell = `<span style="text-decoration: line-through; color: #888; font-weight: bold;">${slot.presenter}</span>`;
+                presenterCell = `<span style="text-decoration: line-through; color: var(--text-muted); font-weight: 700;">${slot.presenter}</span>`;
             } else {
-                // Build Dropdown
-                // Determine Role based on Day (Monday=AA, Wednesday=OA)
                 const day = dateObj.getDay();
                 const isOberarztDay = (day === 3);
 
                 let options = `<option value="">-- Wähle Referent --</option>`;
                 if (currentEmployees && Array.isArray(currentEmployees)) {
-                    // Sort by name for dropdown
                     const sortedEmps = [...currentEmployees].sort(sortEmployeesByName);
                     sortedEmps.forEach(emp => {
                         if (emp.active) {
-                            // Filter by role matching the day
                             if (!!emp.isOberarzt === isOberarztDay || slot.presenter === emp.name) {
                                 const selected = (slot.presenter === emp.name) ? 'selected' : '';
                                 options += `<option value="${emp.name}" ${selected}>${emp.name}</option>`;
@@ -385,7 +386,6 @@ function renderSchedule() {
                         }
                     });
                 }
-                // Keep current value if not in list (legacy support)
                 if (slot.presenter && (!currentEmployees || !currentEmployees.find(e => e.name === slot.presenter && e.active))) {
                     options += `<option value="${slot.presenter}" selected>${slot.presenter} (Archiv)</option>`;
                 }
@@ -396,28 +396,24 @@ function renderSchedule() {
         }
 
         row.innerHTML = `
-            <td>${dateObj.toLocaleDateString('de-DE')}</td>
-            <td>${dayName}</td>
-            <td>${presenterCell}</td>
-            <td class="center-text stats-tooltip">${combinedStatsCell}</td>
+            <td style="font-weight:600;">${dateObj.toLocaleDateString('de-DE')}</td>
+            <td style="color:var(--text-muted); font-size:0.85rem;">${dayName}</td>
+            <td style="font-weight:500;">${presenterCell}</td>
+            <td class="center-text stats-tooltip" data-tooltip="Gehalten / Vergessen">${combinedStatsCell}</td>
             <td class="center-text">${forgottenCell}</td>
             <td class="center-text">${ersatzCell}</td>
             <td class="center-text">
                 ${isAdmin ? (() => {
                 if (slot.forgotten) return '-';
 
-                // Determine Role for Swap Filter
                 let isOberarztSlot = false;
                 const day = dateObj.getDay();
 
                 if (slot.presenter && slot.presenter !== "") {
-                    // If assigned, use the assigned person's role
                     const assignedEmp = currentEmployees.find(e => e.name === slot.presenter);
                     if (assignedEmp) isOberarztSlot = !!assignedEmp.isOberarzt;
                 } else {
-                    // If empty, use day rule
-                    if (day === 3) isOberarztSlot = true; // Wednesday = OA
-                    // else Monday = AA (false)
+                    if (day === 3) isOberarztSlot = true;
                 }
 
                 const swapOptions = [...currentEmployees]
@@ -429,8 +425,8 @@ function renderSchedule() {
                     .map(e => `<option value="${e.name}">${e.name}</option>`)
                     .join('');
 
-                return `<select class="swap-select" onchange="handleSwap(${index}, this.value)">
-                        <option value="">Tauschen...</option>
+                return `<select class="edit-field swap-select" style="width:auto; min-width:100px;" onchange="handleSwap(${index}, this.value)">
+                        <option value="">🔄 Tausch</option>
                         ${swapOptions}
                     </select>`;
             })() : '-'}
@@ -440,7 +436,6 @@ function renderSchedule() {
 
         if (slot.date < today) {
             row.classList.add('past-row');
-            if (!isHoliday && !slot.forgotten) row.style.opacity = '0.5';
         }
         tbody.appendChild(row);
     });
