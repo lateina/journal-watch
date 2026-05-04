@@ -68,10 +68,12 @@ async function init() {
 
     setupTabs();
 
-    // Load data
-    await loadSchedule();
-    await loadEmployees();
-    await loadDistribution();
+    // Load all data in parallel for speed
+    await Promise.all([
+        loadSchedule(),
+        loadEmployees(),
+        loadDistribution()
+    ]);
 
     // Ensure UI reflects admin state AFTER loading
     updateAdminUI();
