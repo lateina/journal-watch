@@ -6,14 +6,6 @@ let currentEmployees = [];
 let currentDistribution = [];
 let isAdmin = false;
 let masterKey = null; // Renamed from apiKey to avoid confusion
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-
-// Anonymous Login for Firestore Access (matching Urlaubsplaner V2)
-auth.signInAnonymously().catch(err => console.error("Firebase Anonymous Auth failed:", err));
-
 let hasUnsavedChanges = false;
 let showPast = false;
 
