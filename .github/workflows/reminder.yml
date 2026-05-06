@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
@@ -24,9 +24,8 @@ jobs:
 
       - name: Run Reminder Script
         env:
-          JSONBIN_API_KEY: ${{ secrets.JSONBIN_API_KEY }}
-          SCHEDULE_BIN_ID: ${{ secrets.SCHEDULE_BIN_ID }}
-          EMPLOYEES_BIN_ID: ${{ secrets.EMPLOYEES_BIN_ID }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
           EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
         run: python scripts/send_reminders.py
