@@ -146,20 +146,26 @@ async function loadEmployees() {
 
 async function loadDistribution() {
     try {
-        if (!masterKey) return; // Need key for JSONBin
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${DISTRIBUTION_BIN_ID}/latest`, {
-            headers: { "X-Master-Key": masterKey }
-        });
-        if (response.ok) {
-            const data = await response.json();
-            currentDistribution = data.record || [];
-        } else {
-            console.warn("Distribution not found on JSONBin.");
+        const docSnap = await db.collection('up_config').doc('main').get();
+        if (docSnap.exists && docSnap.data().distribution) {
+            currentDistribution = docSnap.data().distribution;
+        } else if (masterKey) {
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${DISTRIBUTION_BIN_ID}/latest`, {
+                    headers: { "X-Master-Key": masterKey }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    currentDistribution = data.record || [];
+                }
+            } catch (e) {
+                console.warn("Distribution JSONBin fetch failed (CORS/Network block).", e);
+            }
         }
         syncEmployeeIDs();
         renderDistribution();
     } catch (e) {
-        console.warn("Fehler beim Laden der Verteilung von JSONBin:", e);
+        console.warn("Fehler beim Laden der Verteilung:", e);
     }
 }
 
@@ -1410,22 +1416,23 @@ window.saveSchedule = async function () {
             updatedAt: now
         }, { merge: true });
 
-        // 2. Save Distribution back to JSONBin (Sync with Urlaubsplaner V2)
+        // 2. Save Distribution back to JSONBin (Sync with Urlaubsplaner V2 in background)
         if (masterKey) {
-            await fetch(`https://api.jsonbin.io/v3/b/${DISTRIBUTION_BIN_ID}`, {
+            fetch(`https://api.jsonbin.io/v3/b/${DISTRIBUTION_BIN_ID}`, {
                 method: 'PUT',
                 headers: {
                     "Content-Type": "application/json",
                     "X-Master-Key": masterKey
                 },
                 body: JSON.stringify(currentDistribution)
-            });
+            }).catch(e => console.warn("JSONBin background save failed:", e));
         }
 
-        // 3. Save Employees (Shared with Urlaubsplaner)
+        // 3. Save Employees and Distribution to Firestore (Shared with Urlaubsplaner)
         // Clean employees before saving (remove JW-only UI flags if any, though here we keep them for compatibility)
         await db.collection('up_config').doc('main').set({
             employees: currentEmployees,
+            distribution: currentDistribution,
             updatedAt: now
         }, { merge: true });
 
