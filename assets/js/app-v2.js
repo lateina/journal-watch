@@ -1455,12 +1455,18 @@ window.publishViaEmail = async function() {
         return;
     }
 
-    // 1. Get schedule and filter future slots (date >= today)
+    // 1. Get schedule and filter future slots (date >= today and assigned appointments only)
     const todayStr = new Date().toISOString().split('T')[0];
-    const futureSlots = currentSchedule.filter(slot => slot.date && slot.date >= todayStr).sort((a, b) => a.date.localeCompare(b.date));
+    const futureSlots = currentSchedule.filter(slot => 
+        slot.date && 
+        slot.date >= todayStr && 
+        slot.presenter && 
+        slot.presenter.trim() !== '' && 
+        slot.presenter.trim().toLowerCase() !== 'frei'
+    ).sort((a, b) => a.date.localeCompare(b.date));
     
     if (futureSlots.length === 0) {
-        alert("Es gibt keine zukünftigen Termine im Plan, die per E-Mail gesendet werden könnten.");
+        alert("Es gibt keine zukünftigen vergebenen Termine im Plan, die per E-Mail gesendet werden könnten.");
         return;
     }
 
@@ -1524,6 +1530,8 @@ window.publishViaEmail = async function() {
                 <p>anbei finden Sie den aktuellen Journal Watch Plan.</p>
                 
                 ${scheduleTableHtml}
+                
+                <p>Bitte Tausch und Änderungswünsche direkt an Frau Rohrmaier melden.</p>
                 
                 <p>Weitere Details finden Sie unter: <a href="https://lateina.github.io/journal-watch/" style="color: #0284c7; text-decoration: underline;" target="_blank">https://lateina.github.io/journal-watch/</a></p>
                 
