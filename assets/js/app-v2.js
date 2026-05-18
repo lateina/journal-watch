@@ -652,10 +652,10 @@ function updateAdminUI() {
         else addBtn.classList.add('hidden');
     }
 
-    // Toggle Employee Tab Visibility - Only for Full Admin
+    // Toggle Employee Tab Visibility - For Admin and Sekretariat
     const employeeTabBtn = document.querySelector('button[data-tab="employees"]');
     if (employeeTabBtn) {
-        if (isFullAdmin) employeeTabBtn.classList.remove('hidden');
+        if (isAdmin) employeeTabBtn.classList.remove('hidden');
         else employeeTabBtn.classList.add('hidden');
     }
 
@@ -669,14 +669,14 @@ function updateAdminUI() {
     // Toggle Distribution Tab Button
     const distributionTabBtn = document.querySelector('button[data-tab="distribution"]');
     if (distributionTabBtn) {
-        if (isFullAdmin) distributionTabBtn.classList.remove('hidden');
+        if (isAdmin) distributionTabBtn.classList.remove('hidden');
         else distributionTabBtn.classList.add('hidden');
     }
 
     // Toggle Logout Button
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
-        if (isAdmin) logoutBtn.classList.remove('hidden');
+        if (isLoggedIn) logoutBtn.classList.remove('hidden');
         else logoutBtn.classList.add('hidden');
     }
 }
