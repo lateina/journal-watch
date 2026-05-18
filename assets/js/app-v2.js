@@ -37,10 +37,6 @@ function setupEventListeners() {
         btn.addEventListener('click', (e) => switchTab(e.target.getAttribute('data-tab')));
     });
 
-    // Admin Buttons
-    const loginBtn = document.getElementById('login-btn');
-    if (loginBtn) loginBtn.addEventListener('click', showLogin);
-
     // Save/Logout
     document.querySelectorAll('.save-btn').forEach(btn => btn.addEventListener('click', saveSchedule));
 
@@ -70,7 +66,9 @@ async function init() {
         userRole = storedRole || 'admin';
         isAdmin = userRole.includes('admin') || userRole.includes('administrator') || userRole.includes('sekretariat');
         
-        document.getElementById('login-btn').classList.add('hidden');
+        const mainTabs = document.getElementById('main-tabs');
+        if (mainTabs) mainTabs.classList.remove('hidden');
+
         const adminPanel = document.getElementById('admin-panel');
         if (adminPanel && isAdmin) {
             adminPanel.classList.remove('hidden');
@@ -909,9 +907,11 @@ window.checkLogin = async function () {
             masterKey = configSnap.data().jsonbin_key || configSnap.data().master_key;
             localStorage.setItem('journal_api_key', masterKey); 
             localStorage.setItem('journal_user_role', userRole);
+
+            const mainTabs = document.getElementById('main-tabs');
+            if (mainTabs) mainTabs.classList.remove('hidden');
         }
 
-        document.getElementById('login-btn').classList.add('hidden');
         const adminPanel = document.getElementById('admin-panel');
         if (adminPanel) adminPanel.classList.remove('hidden');
         hideLogin();
