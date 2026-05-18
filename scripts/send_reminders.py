@@ -64,6 +64,7 @@ def send_email(to_email, presenter_name, date_str):
     Sie sind für den Journal Watch am {date_str} eingeteilt.
     
     Bitte bereiten Sie Ihren Beitrag vor.
+    Weitere Details finden Sie unter: https://lateina.github.io/journal-watch/
     
     Mit freundlichen Grüßen,
     A. Rohrmaier
@@ -117,17 +118,23 @@ def main():
     
     today = datetime.now().date()
     days_until_next_monday = 7 - today.weekday()
-    start_date = today + timedelta(days=days_until_next_monday)
-    end_date = start_date + timedelta(days=4)
     
-    print(f"Checking for presentations next week: {start_date} to {end_date}...")
+    # Next week
+    start_date_1 = today + timedelta(days=days_until_next_monday)
+    end_date_1 = start_date_1 + timedelta(days=4)
+    
+    # Week after next (two weeks)
+    start_date_2 = start_date_1 + timedelta(days=7)
+    end_date_2 = start_date_2 + timedelta(days=4)
+    
+    print(f"Checking for presentations next week ({start_date_1} to {end_date_1}) and in two weeks ({start_date_2} to {end_date_2})...")
     
     count = 0
     for slot in schedule:
         if not slot.get('date'): continue
         slot_date = datetime.strptime(slot['date'], "%Y-%m-%d").date()
         
-        if start_date <= slot_date <= end_date:
+        if (start_date_1 <= slot_date <= end_date_1) or (start_date_2 <= slot_date <= end_date_2):
             presenter = slot.get('presenter')
             if presenter and presenter in employee_map:
                 email = employee_map[presenter]
