@@ -832,7 +832,7 @@ window.filterLoginNames = function () {
         if (isSpecial) return false; 
 
         const role = String(emp.role || emp.rolle || "").toLowerCase();
-        return name.includes(query) && (role.includes('admin') || role.includes('sekretariat'));
+        return name.includes(query);
     }).sort(sortEmployeesByName);
 
     const allMatches = [...specialMatches, ...otherMatches];
