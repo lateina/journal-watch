@@ -85,7 +85,7 @@
                                 <th>Datum</th>
                                 <th>Tag</th>
                                 <th>Referent</th>
-                                <th class="center-text stats-tooltip" data-tooltip="Gehalten / Vergessen">Statistik</th>
+                                <th class="center-text stats-tooltip" data-tooltip="Gehalten / Vergessen / Getauscht">Statistik</th>
                                 <th class="center-text">Vergessen?</th>
                                 <th class="center-text">Ersatz?</th>
                                 <th class="center-text">Tausch</th>
@@ -233,6 +233,13 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="assets/js/firebase-config.js"></script>
     <script src="assets/js/app-v2.js?v=2.9"></script>
+
+    <!-- Floating Save Button -->
+    <div id="floating-save-container" class="hidden" style="position: fixed; bottom: 30px; right: 30px; z-index: 1000;">
+        <button class="btn btn-success save-btn" style="padding: 1rem 2rem; font-size: 1.1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1); border-radius: 2rem;">
+            💾 Änderungen Speichern
+        </button>
+    </div>
 </body>
 
 </html>

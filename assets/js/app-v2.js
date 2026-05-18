@@ -7,6 +7,16 @@ let currentDistribution = [];
 let isAdmin = false;
 let masterKey = null; // Renamed from apiKey to avoid confusion
 let hasUnsavedChanges = false;
+let isLoggedIn = false;
+
+window.setUnsavedChanges = function(val) {
+    hasUnsavedChanges = val;
+    const container = document.getElementById("floating-save-container");
+    if (container && isAdmin) {
+        if (val) container.classList.remove("hidden");
+        else container.classList.add("hidden");
+    }
+};
 let showPast = false;
 
 window.toggleShowPast = function (val) {
@@ -32,8 +42,7 @@ function setupEventListeners() {
     if (loginBtn) loginBtn.addEventListener('click', showLogin);
 
     // Save/Logout
-    const saveBtn = document.querySelector('.save-btn');
-    if (saveBtn) saveBtn.addEventListener('click', saveSchedule);
+    document.querySelectorAll('.save-btn').forEach(btn => btn.addEventListener('click', saveSchedule));
 
     const logoutBtn = document.querySelector('#logout-btn'); // Logout
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
@@ -49,21 +58,25 @@ async function init() {
     console.log("App initializing...");
     setupEventListeners(); // Bind events first
 
+    await loadEmployees(); // Always load employees for login modal
+
     // Check local storage for key
     const storedKey = localStorage.getItem('journal_api_key');
     const storedRole = localStorage.getItem('journal_user_role');
     if (storedKey) {
         masterKey = storedKey;
-        isAdmin = true;
-        userRole = storedRole || 'admin'; // Default to admin for legacy or if missing
+        isLoggedIn = true;
+        userRole = storedRole || 'employee';
+        isAdmin = userRole.includes('admin') || userRole.includes('administrator') || userRole.includes('sekretariat');
+        
         document.getElementById('login-btn').classList.add('hidden');
-        const table = document.getElementById('schedule-table');
-        const controls = document.getElementById('schedule-controls');
-        if (table) table.classList.remove('hidden');
-        if (controls) {
-            controls.classList.remove('hidden');
-            controls.style.display = 'flex'; // Ensure flex layout is restored
+        const adminPanel = document.getElementById('admin-panel');
+        if (adminPanel && isAdmin) {
+            adminPanel.classList.remove('hidden');
         }
+    } else {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error-message').classList.remove('hidden');
     }
 
     setupTabs();
@@ -71,7 +84,6 @@ async function init() {
     // Load all data in parallel for speed
     await Promise.all([
         loadSchedule(),
-        loadEmployees(),
         loadDistribution()
     ]);
 
@@ -276,6 +288,7 @@ function showError(msg) {
 // --- Rendering ---
 
 function renderSchedule() {
+    if (!isLoggedIn) return;
     const tbody = document.getElementById('schedule-body');
     // Update UI visibility
     const table = document.getElementById('schedule-table');
@@ -304,12 +317,16 @@ function renderSchedule() {
     // Calculate stats
     const stats = {};
     const forgottenStats = {};
+    const swappedStats = {};
 
     currentSchedule.forEach(s => {
         // Only count frequency if assigned AND NOT forgotten AND NOT holiday
         if (s.presenter && s.presenter !== "" && !checkHoliday(new Date(s.date))) {
             if (!s.forgotten) {
                 stats[s.presenter] = (stats[s.presenter] || 0) + 1;
+                if (s.isSwapped) {
+                    swappedStats[s.presenter] = (swappedStats[s.presenter] || 0) + 1;
+                }
             } else {
                 forgottenStats[s.presenter] = (forgottenStats[s.presenter] || 0) + 1;
             }
@@ -346,9 +363,10 @@ function renderSchedule() {
         } else {
             const count = (slot.presenter && stats[slot.presenter]) ? stats[slot.presenter] : 0;
             const fCount = (slot.presenter && forgottenStats[slot.presenter]) ? forgottenStats[slot.presenter] : 0;
+            const sCount = (slot.presenter && swappedStats[slot.presenter]) ? swappedStats[slot.presenter] : 0;
 
             const fCountDisplay = fCount > 0 ? `<span style="color:var(--danger); font-weight:800;">${fCount}</span>` : "0";
-            combinedStatsCell = `${count} / ${fCountDisplay}`;
+            combinedStatsCell = `✅ ${count} | ❌ ${fCountDisplay} | 🔄 ${sCount}`;
 
             // Forgotten Checkbox
             if (isAdmin && slot.presenter) {
@@ -525,13 +543,13 @@ function checkHoliday(dateObj) {
 }
 window.toggleErsatztermin = function (index, isChecked) {
     currentSchedule[index].isNachholtermin = isChecked;
-    hasUnsavedChanges = true;
+    setUnsavedChanges(true);
     renderSchedule();
 }
 window.toggleForgotten = function (index, isChecked) {
     const slot = currentSchedule[index];
     slot.forgotten = isChecked;
-    hasUnsavedChanges = true;
+    setUnsavedChanges(true);
 
     if (isChecked) {
         // Find next free slot
@@ -711,7 +729,7 @@ window.parseEmployeeInput = function () {
     });
 
     if (addedCount > 0) {
-        hasUnsavedChanges = true;
+        setUnsavedChanges(true);
         renderEmployees();
         renderSchedule(); // Update dropdowns
         alert(`${addedCount} Mitarbeiter hinzugefügt.\nBitte "Speichern" nicht vergessen!`);
@@ -725,13 +743,13 @@ window.parseEmployeeInput = function () {
 
 window.updateSlot = function (index, field, value) {
     currentSchedule[index][field] = value;
-    hasUnsavedChanges = true;
+    setUnsavedChanges(true);
     if (field === 'presenter') renderSchedule(); // Re-calc stats immediately
 }
 
 window.updateEmployee = function (index, field, value) {
     currentEmployees[index][field] = value;
-    hasUnsavedChanges = true;
+    setUnsavedChanges(true);
     // If name or active status changes, we must re-render the schedule dropdowns
     if (field === 'name' || field === 'active') {
         renderSchedule();
@@ -741,7 +759,7 @@ window.updateEmployee = function (index, field, value) {
 window.addEmployee = function () {
     if (!currentEmployees) currentEmployees = [];
     currentEmployees.push({ id: "", name: "Neu", email: "@", active: true, isOberarzt: false });
-    hasUnsavedChanges = true;
+    setUnsavedChanges(true);
     renderEmployees();
     renderSchedule(); // Update dropdowns immediately
 }
@@ -749,7 +767,7 @@ window.addEmployee = function () {
 window.deleteEmployee = function (index) {
     if (confirm("Mitarbeiter wirklich löschen?")) {
         currentEmployees.splice(index, 1);
-        hasUnsavedChanges = true;
+        setUnsavedChanges(true);
         renderEmployees();
         renderSchedule(); // Update dropdowns immediately
     }
@@ -877,9 +895,13 @@ window.checkLogin = async function () {
             throw new Error("Falsche PIN");
         }
 
-        isAdmin = true;
         const role = String(emp.role || emp.rolle || "").toLowerCase();
-        userRole = role.includes('sekretariat') ? 'sekretariat' : 'admin';
+        userRole = 'employee';
+        if (role.includes('sekretariat')) userRole = 'sekretariat';
+        if (role.includes('admin') || role.includes('administrator')) userRole = 'admin';
+        
+        isAdmin = (userRole === 'admin' || userRole === 'sekretariat');
+        isLoggedIn = true;
         
         const configSnap = await db.collection('up_config').doc('main').get();
         if (configSnap.exists) {
@@ -1008,11 +1030,20 @@ window.executeSwap = function (sourceIndex, targetIndex) {
 
     sourceSlot.presenter = targetName;
     targetSlot.presenter = sourceName;
+    
+    // Add Tausch info to topics
+    const sourceTopic = sourceSlot.topic || "";
+    const targetTopic = targetSlot.topic || "";
+    if (!sourceTopic.includes("[Tausch mit")) sourceSlot.topic = (sourceTopic + " [Tausch mit " + targetName + "]").trim();
+    if (!targetTopic.includes("[Tausch mit")) targetSlot.topic = (targetTopic + " [Tausch mit " + sourceName + "]").trim();
+    
+    sourceSlot.isSwapped = true;
+    targetSlot.isSwapped = true;
 
     sourceSlot.forgotten = false;
     targetSlot.forgotten = false;
 
-    hasUnsavedChanges = true;
+    setUnsavedChanges(true);
     saveSchedule();
     renderSchedule();
 }
@@ -1221,7 +1252,7 @@ window.autoDistribute = function () {
         }
     });
 
-    if (filledCount > 0 || clearedCount > 0) hasUnsavedChanges = true;
+    if (filledCount > 0 || clearedCount > 0) setUnsavedChanges(true);
     renderSchedule();
 
     if (filledCount > 0 || clearedCount > 0) {
@@ -1397,7 +1428,7 @@ window.saveSchedule = async function () {
             updatedAt: now
         }, { merge: true });
 
-        hasUnsavedChanges = false;
+        setUnsavedChanges(false);
         alert("Alle Änderungen in Firestore gespeichert!");
     } catch (e) {
         console.error("Save Error:", e);
