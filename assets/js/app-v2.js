@@ -1447,4 +1447,173 @@ window.saveSchedule = async function () {
     }
 }
 
+window.publishViaEmail = async function() {
+    if (!isAdmin) return;
+
+    if (hasUnsavedChanges) {
+        alert("Bitte speichern Sie zuerst Ihre Änderungen ab (Klick auf 'Speichern'), bevor Sie den Plan per E-Mail veröffentlichen.");
+        return;
+    }
+
+    const confirmPublish = confirm(
+        "Möchten Sie den aktuellen Journal Watch Plan bis zum Ende der aktuellen Planung per E-Mail an alle betroffenen Referenten verschicken?\n\nJeder Referent erhält eine personalisierte E-Mail mit einer Tabelle aller zukünftigen Termine."
+    );
+    if (!confirmPublish) return;
+
+    // Create a beautiful premium overlay
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+    overlay.style.backdropFilter = 'blur(8px)';
+    overlay.style.webkitBackdropFilter = 'blur(8px)';
+    overlay.style.display = 'flex';
+    overlay.style.justifyContent = 'center';
+    overlay.style.alignItems = 'center';
+    overlay.style.zIndex = '99999';
+    overlay.style.transition = 'opacity 0.3s ease';
+    overlay.style.opacity = '0';
+
+    const card = document.createElement('div');
+    card.style.backgroundColor = '#ffffff';
+    card.style.borderRadius = '1.5rem';
+    card.style.padding = '2.5rem';
+    card.style.width = '100%';
+    card.style.maxWidth = '480px';
+    card.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.25)';
+    card.style.textAlign = 'center';
+    card.style.fontFamily = "'Inter', sans-serif";
+    card.style.color = '#1e293b';
+    card.style.transform = 'scale(0.9)';
+    card.style.transition = 'transform 0.3s ease';
+
+    // Spinner
+    const spinnerContainer = document.createElement('div');
+    spinnerContainer.style.margin = '0 auto 1.5rem';
+    spinnerContainer.style.width = '64px';
+    spinnerContainer.style.height = '64px';
+    spinnerContainer.style.position = 'relative';
+
+    const spinner = document.createElement('div');
+    spinner.style.width = '100%';
+    spinner.style.height = '100%';
+    spinner.style.border = '5px solid #e2e8f0';
+    spinner.style.borderTop = '5px solid #0284c7';
+    spinner.style.borderRadius = '50%';
+    spinner.style.animation = 'spin 1s linear infinite';
+    spinnerContainer.appendChild(spinner);
+
+    // Dynamic Style for animation
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = `
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(styleSheet);
+
+    const title = document.createElement('h3');
+    title.innerText = "Plan wird veröffentlicht";
+    title.style.fontSize = '1.5rem';
+    title.style.fontWeight = '700';
+    title.style.marginBottom = '0.75rem';
+
+    const statusText = document.createElement('p');
+    statusText.innerText = "Verbindung mit Server wird hergestellt...";
+    statusText.style.color = '#64748b';
+    statusText.style.fontSize = '0.95rem';
+    statusText.style.lineHeight = '1.5';
+    statusText.style.marginBottom = '1.5rem';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.innerText = "Schließen";
+    closeBtn.className = "btn btn-secondary";
+    closeBtn.style.display = 'none';
+    closeBtn.style.margin = '0 auto';
+    closeBtn.onclick = () => {
+        overlay.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        setTimeout(() => overlay.remove(), 300);
+    };
+
+    card.appendChild(spinnerContainer);
+    card.appendChild(title);
+    card.appendChild(statusText);
+    card.appendChild(closeBtn);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    // Fade in
+    setTimeout(() => {
+        overlay.style.opacity = '1';
+        card.style.transform = 'scale(1)';
+    }, 10);
+
+    try {
+        // Create Publish Job in Firestore
+        const docRef = await db.collection('jw_publish_jobs').add({
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Listen for updates
+        const unsubscribe = docRef.onSnapshot((doc) => {
+            if (!doc.exists) return;
+            const data = doc.data();
+
+            if (data.status === 'processing') {
+                statusText.innerHTML = "✨ <strong>E-Mails werden generiert und versendet...</strong><br>Bitte das Fenster nicht schließen.";
+            } else if (data.status === 'completed') {
+                unsubscribe();
+                spinner.style.borderTopColor = '#10b981'; // Green for success
+                spinner.style.animation = 'none';
+                spinner.style.transform = 'rotate(0deg)';
+                spinner.innerHTML = `<span style="font-size: 2.5rem; line-height: 54px; color: #10b981;">✓</span>`;
+                title.innerText = "Veröffentlichung erfolgreich!";
+                
+                let warningText = "";
+                if (data.warnings && data.warnings.length > 0) {
+                    warningText = `<br><br><strong style="color: #d97706;">Hinweis:</strong><ul style="text-align: left; font-size: 0.85rem; color: #b45309; margin-top: 5px; padding-left: 20px;">` + 
+                        data.warnings.map(w => `<li>${w}</li>`).join('') + `</ul>`;
+                }
+
+                statusText.innerHTML = `Der Plan wurde erfolgreich an <strong>${data.sentCount} Referenten</strong> per E-Mail gesendet!${warningText}`;
+                closeBtn.style.display = 'block';
+                closeBtn.className = "btn btn-success";
+                closeBtn.style.backgroundColor = '#10b981';
+                closeBtn.style.border = 'none';
+            } else if (data.status === 'failed') {
+                unsubscribe();
+                spinner.style.borderTopColor = '#ef4444'; // Red for fail
+                spinner.style.animation = 'none';
+                spinner.innerHTML = `<span style="font-size: 2.5rem; line-height: 54px; color: #ef4444;">✗</span>`;
+                title.innerText = "Fehler beim Veröffentlichen";
+                statusText.innerHTML = `Ein Fehler ist aufgetreten:<br><code style="color:#ef4444; word-break:break-all;">${data.error || 'Unbekannter Fehler'}</code>`;
+                closeBtn.style.display = 'block';
+                closeBtn.className = "btn btn-danger";
+                closeBtn.style.backgroundColor = '#ef4444';
+                closeBtn.style.border = 'none';
+            }
+        }, (error) => {
+            console.error("Firestore job subscription failed:", error);
+            unsubscribe();
+            statusText.innerText = "Verbindungsfehler bei Statusaktualisierung: " + error.message;
+            closeBtn.style.display = 'block';
+        });
+
+    } catch (err) {
+        console.error("Failed to start publish job:", err);
+        spinner.style.borderTopColor = '#ef4444';
+        spinner.style.animation = 'none';
+        spinner.innerHTML = `<span style="font-size: 2.5rem; line-height: 54px; color: #ef4444;">✗</span>`;
+        title.innerText = "Fehler beim Starten";
+        statusText.innerText = "Die Veröffentlichung konnte nicht gestartet werden: " + err.message;
+        closeBtn.style.display = 'block';
+    }
+};
+
 // Old saveData function removed
