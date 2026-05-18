@@ -66,7 +66,8 @@ async function init() {
     if (storedKey) {
         masterKey = storedKey;
         isLoggedIn = true;
-        userRole = storedRole || 'employee';
+        // Legacy fallback: if there's a key but no role, it must be an admin from before the update
+        userRole = storedRole || 'admin';
         isAdmin = userRole.includes('admin') || userRole.includes('administrator') || userRole.includes('sekretariat');
         
         document.getElementById('login-btn').classList.add('hidden');
