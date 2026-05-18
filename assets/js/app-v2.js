@@ -1455,164 +1455,408 @@ window.publishViaEmail = async function() {
         return;
     }
 
-    const confirmPublish = confirm(
-        "Möchten Sie den aktuellen Journal Watch Plan bis zum Ende der aktuellen Planung per E-Mail an alle betroffenen Referenten verschicken?\n\nJeder Referent erhält eine personalisierte E-Mail mit einer Tabelle aller zukünftigen Termine."
-    );
-    if (!confirmPublish) return;
+    // 1. Get schedule and filter future slots (date >= today)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const futureSlots = currentSchedule.filter(slot => slot.date && slot.date >= todayStr).sort((a, b) => a.date.localeCompare(b.date));
+    
+    if (futureSlots.length === 0) {
+        alert("Es gibt keine zukünftigen Termine im Plan, die per E-Mail gesendet werden könnten.");
+        return;
+    }
 
-    // Create a beautiful premium overlay
-    const overlay = document.createElement('div');
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
-    overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
-    overlay.style.backdropFilter = 'blur(8px)';
-    overlay.style.webkitBackdropFilter = 'blur(8px)';
-    overlay.style.display = 'flex';
-    overlay.style.justifyContent = 'center';
-    overlay.style.alignItems = 'center';
-    overlay.style.zIndex = '99999';
-    overlay.style.transition = 'opacity 0.3s ease';
-    overlay.style.opacity = '0';
+    // 2. Identify all unique presenters in the future schedule
+    const uniquePresenters = [...new Set(futureSlots.map(s => s.presenter).filter(Boolean))].sort();
+    
+    if (uniquePresenters.length === 0) {
+        alert("Es sind keine Referenten in den zukünftigen Terminen eingetragen.");
+        return;
+    }
 
-    const card = document.createElement('div');
-    card.style.backgroundColor = '#ffffff';
-    card.style.borderRadius = '1.5rem';
-    card.style.padding = '2.5rem';
-    card.style.width = '100%';
-    card.style.maxWidth = '480px';
-    card.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.25)';
-    card.style.textAlign = 'center';
-    card.style.fontFamily = "'Inter', sans-serif";
-    card.style.color = '#1e293b';
-    card.style.transform = 'scale(0.9)';
-    card.style.transition = 'transform 0.3s ease';
-
-    // Spinner
-    const spinnerContainer = document.createElement('div');
-    spinnerContainer.style.margin = '0 auto 1.5rem';
-    spinnerContainer.style.width = '64px';
-    spinnerContainer.style.height = '64px';
-    spinnerContainer.style.position = 'relative';
-
-    const spinner = document.createElement('div');
-    spinner.style.width = '100%';
-    spinner.style.height = '100%';
-    spinner.style.border = '5px solid #e2e8f0';
-    spinner.style.borderTop = '5px solid #0284c7';
-    spinner.style.borderRadius = '50%';
-    spinner.style.animation = 'spin 1s linear infinite';
-    spinnerContainer.appendChild(spinner);
-
-    // Dynamic Style for animation
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = `
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    `;
-    document.head.appendChild(styleSheet);
-
-    const title = document.createElement('h3');
-    title.innerText = "Plan wird veröffentlicht";
-    title.style.fontSize = '1.5rem';
-    title.style.fontWeight = '700';
-    title.style.marginBottom = '0.75rem';
-
-    const statusText = document.createElement('p');
-    statusText.innerText = "Verbindung mit Server wird hergestellt...";
-    statusText.style.color = '#64748b';
-    statusText.style.fontSize = '0.95rem';
-    statusText.style.lineHeight = '1.5';
-    statusText.style.marginBottom = '1.5rem';
-
-    const closeBtn = document.createElement('button');
-    closeBtn.innerText = "Schließen";
-    closeBtn.className = "btn btn-secondary";
-    closeBtn.style.display = 'none';
-    closeBtn.style.margin = '0 auto';
-    closeBtn.onclick = () => {
-        overlay.style.opacity = '0';
-        card.style.transform = 'scale(0.9)';
-        setTimeout(() => overlay.remove(), 300);
+    // Prepare preview helper functions
+    const getEmailForPresenter = (presenterName) => {
+        const emp = currentEmployees.find(e => e.name && e.name.trim() === presenterName.trim());
+        const email = emp ? emp.email || emp.mitarbeiter_email : null;
+        return (email && email.trim() !== '' && email.trim() !== '@') ? email.trim() : null;
     };
 
-    card.appendChild(spinnerContainer);
-    card.appendChild(title);
-    card.appendChild(statusText);
-    card.appendChild(closeBtn);
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
+    const buildPreviewHtml = (presenterName) => {
+        let tableRowsHtml = '';
+        const dayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+        
+        futureSlots.forEach(slot => {
+            const dateObj = new Date(slot.date);
+            const dayName = dayNames[dateObj.getDay()];
+            const formattedDate = slot.date.split('-').reverse().join('.'); // DD.MM.YYYY
+            
+            const presenterText = slot.forgotten ? `<span style="text-decoration: line-through; color: #94a3b8;">${slot.presenter}</span>` : (slot.presenter || '<span style="color:#cbd5e1">Frei</span>');
+            const topicText = slot.topic || '';
+            const rowBg = slot.isNachholtermin ? 'background-color: #fef08a;' : '';
+            
+            tableRowsHtml += `
+                <tr style="${rowBg}">
+                    <td style="padding: 10px; border: 1px solid #cbd5e1;">${formattedDate}</td>
+                    <td style="padding: 10px; border: 1px solid #cbd5e1;">${dayName}</td>
+                    <td style="padding: 10px; border: 1px solid #cbd5e1;">${presenterText}</td>
+                    <td style="padding: 10px; border: 1px solid #cbd5e1;">${topicText}</td>
+                </tr>
+            `;
+        });
+        
+        const scheduleTableHtml = `
+            <table style="border-collapse: collapse; width: 100%; max-width: 600px; font-family: Arial, sans-serif; font-size: 14px; margin: 15px 0; color: #1e293b;">
+              <thead>
+                <tr style="background-color: #0f172a; color: #ffffff; text-align: left;">
+                  <th style="padding: 10px; border: 1px solid #cbd5e1;">Datum</th>
+                  <th style="padding: 10px; border: 1px solid #cbd5e1;">Tag</th>
+                  <th style="padding: 10px; border: 1px solid #cbd5e1;">Referent</th>
+                  <th style="padding: 10px; border: 1px solid #cbd5e1;">Thema</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRowsHtml}
+              </tbody>
+            </table>
+        `;
+        
+        return `
+            <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.5; color: #334155; max-width: 600px; text-align: left;">
+                <p>Hallo ${presenterName},</p>
+                <p>anbei finden Sie den aktuellen Journal Watch Plan.</p>
+                
+                ${scheduleTableHtml}
+                
+                <p>Weitere Details finden Sie unter: <a href="https://lateina.github.io/journal-watch/" style="color: #0284c7; text-decoration: underline;" target="_blank">https://lateina.github.io/journal-watch/</a></p>
+                
+                <p style="margin-top: 30px; color: #64748b;">
+                    Mit freundlichen Grüßen,<br>
+                    A. Rohrmaier<br><br>
+                    Astrid Rohrmaier<br>
+                    Oberarzt-Sekretariat Kardiologie<br>
+                    Universitätsklinikum Regensburg<br>
+                    Franz-Josef-Strauß-Allee 11<br>
+                    93053 Regensburg<br>
+                    <a href="mailto:astrid.rohrmaier@ukr.de" style="color: #0284c7;">astrid.rohrmaier@ukr.de</a><br>
+                    Tel.: 0941-9447207
+                </p>
+            </div>
+        `;
+    };
+
+    // 3. Create the gorgeous Preview Modal
+    const previewOverlay = document.createElement('div');
+    previewOverlay.style.position = 'fixed';
+    previewOverlay.style.top = '0';
+    previewOverlay.style.left = '0';
+    previewOverlay.style.width = '100vw';
+    previewOverlay.style.height = '100vh';
+    previewOverlay.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+    previewOverlay.style.backdropFilter = 'blur(8px)';
+    previewOverlay.style.webkitBackdropFilter = 'blur(8px)';
+    previewOverlay.style.display = 'flex';
+    previewOverlay.style.justifyContent = 'center';
+    previewOverlay.style.alignItems = 'center';
+    previewOverlay.style.zIndex = '99999';
+    previewOverlay.style.transition = 'opacity 0.3s ease';
+    previewOverlay.style.opacity = '0';
+
+    const previewCard = document.createElement('div');
+    previewCard.style.backgroundColor = '#ffffff';
+    previewCard.style.borderRadius = '1.5rem';
+    previewCard.style.padding = '2rem';
+    previewCard.style.width = '90%';
+    previewCard.style.maxWidth = '750px';
+    previewCard.style.maxHeight = '90vh';
+    previewCard.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.25)';
+    previewCard.style.fontFamily = "'Inter', sans-serif";
+    previewCard.style.color = '#1e293b';
+    previewCard.style.display = 'flex';
+    previewCard.style.flexDirection = 'column';
+    previewCard.style.transform = 'scale(0.9)';
+    previewCard.style.transition = 'transform 0.3s ease';
+
+    // Title
+    const previewTitle = document.createElement('h3');
+    previewTitle.innerText = "✉️ E-Mail-Veröffentlichung prüfen";
+    previewTitle.style.fontSize = '1.4rem';
+    previewTitle.style.fontWeight = '700';
+    previewTitle.style.marginBottom = '1rem';
+    previewTitle.style.borderBottom = '1px solid #e2e8f0';
+    previewTitle.style.paddingBottom = '0.5rem';
+    previewCard.appendChild(previewTitle);
+
+    // Dropdown selection container
+    const selectorContainer = document.createElement('div');
+    selectorContainer.style.display = 'flex';
+    selectorContainer.style.alignItems = 'center';
+    selectorContainer.style.gap = '10px';
+    selectorContainer.style.marginBottom = '1rem';
+
+    const selectorLabel = document.createElement('label');
+    selectorLabel.innerText = "Vorschau für Referent:";
+    selectorLabel.style.fontWeight = '600';
+    selectorLabel.style.fontSize = '0.9rem';
+
+    const presenterSelect = document.createElement('select');
+    presenterSelect.style.padding = '6px 12px';
+    presenterSelect.style.borderRadius = '6px';
+    presenterSelect.style.border = '1px solid #cbd5e1';
+    presenterSelect.style.fontSize = '0.9rem';
+    presenterSelect.style.outline = 'none';
+    uniquePresenters.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.innerText = p;
+        presenterSelect.appendChild(opt);
+    });
+
+    selectorContainer.appendChild(selectorLabel);
+    selectorContainer.appendChild(presenterSelect);
+    previewCard.appendChild(selectorContainer);
+
+    // Headers Area (To, Subject)
+    const headersBox = document.createElement('div');
+    headersBox.style.backgroundColor = '#f8fafc';
+    headersBox.style.border = '1px solid #e2e8f0';
+    headersBox.style.borderRadius = '8px';
+    headersBox.style.padding = '12px 16px';
+    headersBox.style.marginBottom = '1rem';
+    headersBox.style.fontSize = '0.9rem';
+    headersBox.style.lineHeight = '1.6';
+
+    const toRow = document.createElement('div');
+    toRow.innerHTML = `<strong>An:</strong> <span id="preview-email-to" style="color: #0284c7;">-</span>`;
+    const subjectRow = document.createElement('div');
+    subjectRow.innerHTML = `<strong>Betreff:</strong> Aktueller Journal Watch Plan`;
+
+    headersBox.appendChild(toRow);
+    headersBox.appendChild(subjectRow);
+    previewCard.appendChild(headersBox);
+
+    // Live HTML Body container (Scrollable)
+    const emailBodyContainer = document.createElement('div');
+    emailBodyContainer.style.flex = '1';
+    emailBodyContainer.style.overflowY = 'auto';
+    emailBodyContainer.style.border = '1px solid #e2e8f0';
+    emailBodyContainer.style.borderRadius = '8px';
+    emailBodyContainer.style.padding = '15px';
+    emailBodyContainer.style.backgroundColor = '#ffffff';
+    emailBodyContainer.style.minHeight = '250px';
+    emailBodyContainer.style.maxHeight = '400px';
+    previewCard.appendChild(emailBodyContainer);
+
+    // Update function
+    const updatePreview = () => {
+        const selectedPresenter = presenterSelect.value;
+        const email = getEmailForPresenter(selectedPresenter);
+        const toSpan = previewCard.querySelector('#preview-email-to');
+        if (email) {
+            toSpan.innerText = `${selectedPresenter} <${email}>`;
+            toSpan.style.color = '#0284c7';
+        } else {
+            toSpan.innerText = `${selectedPresenter} (⚠️ Keine E-Mail-Adresse hinterlegt)`;
+            toSpan.style.color = '#ef4444';
+        }
+        emailBodyContainer.innerHTML = buildPreviewHtml(selectedPresenter);
+    };
+
+    presenterSelect.onchange = updatePreview;
+    updatePreview(); // Initial render
+
+    // Footer actions
+    const footer = document.createElement('div');
+    footer.style.display = 'flex';
+    footer.style.justifyContent = 'flex-end';
+    footer.style.gap = '12px';
+    footer.style.marginTop = '1.5rem';
+    footer.style.borderTop = '1px solid #e2e8f0';
+    footer.style.paddingTop = '1rem';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.innerText = "Abbrechen";
+    cancelBtn.className = "btn btn-secondary";
+    cancelBtn.style.padding = '8px 16px';
+    cancelBtn.style.fontSize = '0.95rem';
+    cancelBtn.onclick = () => {
+        previewOverlay.style.opacity = '0';
+        previewCard.style.transform = 'scale(0.9)';
+        setTimeout(() => previewOverlay.remove(), 300);
+    };
+
+    const sendBtn = document.createElement('button');
+    sendBtn.innerText = `✉️ Jetzt an alle ${uniquePresenters.length} Referenten senden`;
+    sendBtn.className = "btn btn-primary";
+    sendBtn.style.backgroundColor = '#0284c7';
+    sendBtn.style.border = 'none';
+    sendBtn.style.padding = '8px 20px';
+    sendBtn.style.fontSize = '0.95rem';
+    sendBtn.onclick = async () => {
+        // Close preview
+        previewOverlay.remove();
+        
+        // Open the beautiful processing overlay
+        triggerPublishJob();
+    };
+
+    footer.appendChild(cancelBtn);
+    footer.appendChild(sendBtn);
+    previewCard.appendChild(footer);
+    previewOverlay.appendChild(previewCard);
+    document.body.appendChild(previewOverlay);
 
     // Fade in
     setTimeout(() => {
-        overlay.style.opacity = '1';
-        card.style.transform = 'scale(1)';
+        previewOverlay.style.opacity = '1';
+        previewCard.style.transform = 'scale(1)';
     }, 10);
 
-    try {
-        // Create Publish Job in Firestore
-        const docRef = await db.collection('jw_publish_jobs').add({
-            status: 'pending',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+    // Processing trigger function
+    function triggerPublishJob() {
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100vw';
+        overlay.style.height = '100vh';
+        overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+        overlay.style.backdropFilter = 'blur(8px)';
+        overlay.style.webkitBackdropFilter = 'blur(8px)';
+        overlay.style.display = 'flex';
+        overlay.style.justifyContent = 'center';
+        overlay.style.alignItems = 'center';
+        overlay.style.zIndex = '99999';
+        overlay.style.transition = 'opacity 0.3s ease';
+        overlay.style.opacity = '0';
 
-        // Listen for updates
-        const unsubscribe = docRef.onSnapshot((doc) => {
-            if (!doc.exists) return;
-            const data = doc.data();
+        const card = document.createElement('div');
+        card.style.backgroundColor = '#ffffff';
+        card.style.borderRadius = '1.5rem';
+        card.style.padding = '2.5rem';
+        card.style.width = '100%';
+        card.style.maxWidth = '480px';
+        card.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.25)';
+        card.style.textAlign = 'center';
+        card.style.fontFamily = "'Inter', sans-serif";
+        card.style.color = '#1e293b';
+        card.style.transform = 'scale(0.9)';
+        card.style.transition = 'transform 0.3s ease';
 
-            if (data.status === 'processing') {
-                statusText.innerHTML = "✨ <strong>E-Mails werden generiert und versendet...</strong><br>Bitte das Fenster nicht schließen.";
-            } else if (data.status === 'completed') {
-                unsubscribe();
-                spinner.style.borderTopColor = '#10b981'; // Green for success
-                spinner.style.animation = 'none';
-                spinner.style.transform = 'rotate(0deg)';
-                spinner.innerHTML = `<span style="font-size: 2.5rem; line-height: 54px; color: #10b981;">✓</span>`;
-                title.innerText = "Veröffentlichung erfolgreich!";
-                
-                let warningText = "";
-                if (data.warnings && data.warnings.length > 0) {
-                    warningText = `<br><br><strong style="color: #d97706;">Hinweis:</strong><ul style="text-align: left; font-size: 0.85rem; color: #b45309; margin-top: 5px; padding-left: 20px;">` + 
-                        data.warnings.map(w => `<li>${w}</li>`).join('') + `</ul>`;
-                }
+        const spinnerContainer = document.createElement('div');
+        spinnerContainer.style.margin = '0 auto 1.5rem';
+        spinnerContainer.style.width = '64px';
+        spinnerContainer.style.height = '64px';
+        spinnerContainer.style.position = 'relative';
 
-                statusText.innerHTML = `Der Plan wurde erfolgreich an <strong>${data.sentCount} Referenten</strong> per E-Mail gesendet!${warningText}`;
-                closeBtn.style.display = 'block';
-                closeBtn.className = "btn btn-success";
-                closeBtn.style.backgroundColor = '#10b981';
-                closeBtn.style.border = 'none';
-            } else if (data.status === 'failed') {
-                unsubscribe();
-                spinner.style.borderTopColor = '#ef4444'; // Red for fail
+        const spinner = document.createElement('div');
+        spinner.style.width = '100%';
+        spinner.style.height = '100%';
+        spinner.style.border = '5px solid #e2e8f0';
+        spinner.style.borderTop = '5px solid #0284c7';
+        spinner.style.borderRadius = '50%';
+        spinner.style.animation = 'spin 1s linear infinite';
+        spinnerContainer.appendChild(spinner);
+
+        const title = document.createElement('h3');
+        title.innerText = "Plan wird veröffentlicht";
+        title.style.fontSize = '1.5rem';
+        title.style.fontWeight = '700';
+        title.style.marginBottom = '0.75rem';
+
+        const statusText = document.createElement('p');
+        statusText.innerText = "Verbindung mit Server wird hergestellt...";
+        statusText.style.color = '#64748b';
+        statusText.style.fontSize = '0.95rem';
+        statusText.style.lineHeight = '1.5';
+        statusText.style.marginBottom = '1.5rem';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.innerText = "Schließen";
+        closeBtn.className = "btn btn-secondary";
+        closeBtn.style.display = 'none';
+        closeBtn.style.margin = '0 auto';
+        closeBtn.onclick = () => {
+            overlay.style.opacity = '0';
+            card.style.transform = 'scale(0.9)';
+            setTimeout(() => overlay.remove(), 300);
+        };
+
+        card.appendChild(spinnerContainer);
+        card.appendChild(title);
+        card.appendChild(statusText);
+        card.appendChild(closeBtn);
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+            card.style.transform = 'scale(1)';
+        }, 10);
+
+        try {
+            db.collection('jw_publish_jobs').add({
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(docRef => {
+                const unsubscribe = docRef.onSnapshot((doc) => {
+                    if (!doc.exists) return;
+                    const data = doc.data();
+
+                    if (data.status === 'processing') {
+                        statusText.innerHTML = "✨ <strong>E-Mails werden generiert und versendet...</strong><br>Bitte das Fenster nicht schließen.";
+                    } else if (data.status === 'completed') {
+                        unsubscribe();
+                        spinner.style.borderTopColor = '#10b981';
+                        spinner.style.animation = 'none';
+                        spinner.style.transform = 'rotate(0deg)';
+                        spinner.innerHTML = `<span style="font-size: 2.5rem; line-height: 54px; color: #10b981;">✓</span>`;
+                        title.innerText = "Veröffentlichung erfolgreich!";
+                        
+                        let warningText = "";
+                        if (data.warnings && data.warnings.length > 0) {
+                            warningText = `<br><br><strong style="color: #d97706;">Hinweis:</strong><ul style="text-align: left; font-size: 0.85rem; color: #b45309; margin-top: 5px; padding-left: 20px;">` + 
+                                data.warnings.map(w => `<li>${w}</li>`).join('') + `</ul>`;
+                        }
+
+                        statusText.innerHTML = `Der Plan wurde erfolgreich an <strong>${data.sentCount} Referenten</strong> per E-Mail gesendet!${warningText}`;
+                        closeBtn.style.display = 'block';
+                        closeBtn.className = "btn btn-success";
+                        closeBtn.style.backgroundColor = '#10b981';
+                        closeBtn.style.border = 'none';
+                    } else if (data.status === 'failed') {
+                        unsubscribe();
+                        spinner.style.borderTopColor = '#ef4444';
+                        spinner.style.animation = 'none';
+                        spinner.innerHTML = `<span style="font-size: 2.5rem; line-height: 54px; color: #ef4444;">✗</span>`;
+                        title.innerText = "Fehler beim Veröffentlichen";
+                        statusText.innerHTML = `Ein Fehler ist aufgetreten:<br><code style="color:#ef4444; word-break:break-all;">${data.error || 'Unbekannter Fehler'}</code>`;
+                        closeBtn.style.display = 'block';
+                        closeBtn.className = "btn btn-danger";
+                        closeBtn.style.backgroundColor = '#ef4444';
+                        closeBtn.style.border = 'none';
+                    }
+                }, (error) => {
+                    console.error("Firestore job subscription failed:", error);
+                    unsubscribe();
+                    statusText.innerText = "Verbindungsfehler bei Statusaktualisierung: " + error.message;
+                    closeBtn.style.display = 'block';
+                });
+            }).catch(err => {
+                console.error("Failed to start publish job:", err);
+                spinner.style.borderTopColor = '#ef4444';
                 spinner.style.animation = 'none';
                 spinner.innerHTML = `<span style="font-size: 2.5rem; line-height: 54px; color: #ef4444;">✗</span>`;
-                title.innerText = "Fehler beim Veröffentlichen";
-                statusText.innerHTML = `Ein Fehler ist aufgetreten:<br><code style="color:#ef4444; word-break:break-all;">${data.error || 'Unbekannter Fehler'}</code>`;
+                title.innerText = "Fehler beim Starten";
+                statusText.innerText = "Die Veröffentlichung konnte nicht gestartet werden: " + err.message;
                 closeBtn.style.display = 'block';
-                closeBtn.className = "btn btn-danger";
-                closeBtn.style.backgroundColor = '#ef4444';
-                closeBtn.style.border = 'none';
-            }
-        }, (error) => {
-            console.error("Firestore job subscription failed:", error);
-            unsubscribe();
-            statusText.innerText = "Verbindungsfehler bei Statusaktualisierung: " + error.message;
+            });
+        } catch (err) {
+            console.error("Failed to start publish job:", err);
+            spinner.style.borderTopColor = '#ef4444';
+            spinner.style.animation = 'none';
+            spinner.innerHTML = `<span style="font-size: 2.5rem; line-height: 54px; color: #ef4444;">✗</span>`;
+            title.innerText = "Fehler beim Starten";
+            statusText.innerText = "Die Veröffentlichung konnte nicht gestartet werden: " + err.message;
             closeBtn.style.display = 'block';
-        });
-
-    } catch (err) {
-        console.error("Failed to start publish job:", err);
-        spinner.style.borderTopColor = '#ef4444';
-        spinner.style.animation = 'none';
-        spinner.innerHTML = `<span style="font-size: 2.5rem; line-height: 54px; color: #ef4444;">✗</span>`;
-        title.innerText = "Fehler beim Starten";
-        statusText.innerText = "Die Veröffentlichung konnte nicht gestartet werden: " + err.message;
-        closeBtn.style.display = 'block';
+        }
     }
 };
 
