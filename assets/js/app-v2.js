@@ -901,9 +901,11 @@ window.checkLogin = async function () {
         }
 
         const role = String(emp.role || emp.rolle || "").toLowerCase();
+        const name = String(emp.name || "").toLowerCase();
+        
         userRole = 'employee';
-        if (role.includes('sekretariat')) userRole = 'sekretariat';
-        if (role.includes('admin') || role.includes('administrator')) userRole = 'admin';
+        if (role.includes('sekretariat') || name.includes('sekretariat')) userRole = 'sekretariat';
+        if (role.includes('admin') || role.includes('administrator') || name.includes('admin') || name.includes('administrator')) userRole = 'admin';
         
         isAdmin = (userRole === 'admin' || userRole === 'sekretariat');
         isLoggedIn = true;
