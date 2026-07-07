@@ -588,6 +588,9 @@ function renderEmployees() {
     const tbody = document.getElementById('employee-body');
     if (!tbody || !table) return;
 
+    // Check if user is full admin
+    const isFullAdmin = isAdmin && userRole === 'admin';
+
     // Make table visible
     table.classList.remove('hidden');
 
@@ -606,7 +609,7 @@ function renderEmployees() {
         let activeCell = emp.active ? "Ja" : "Nein";
         let actionCell = "";
 
-        if (isAdmin) {
+        if (isFullAdmin) {
             idCell = `<input class="edit-field" value="${emp.id || ''}" onchange="updateEmployee(${index}, 'id', this.value)" style="width: 90px;">`;
             nameCell = `<input class="edit-field" value="${emp.name || ''}" onchange="updateEmployee(${index}, 'name', this.value)">`;
             emailCell = `<input class="edit-field" value="${emp.email || ''}" onchange="updateEmployee(${index}, 'email', this.value)">`;
@@ -622,7 +625,7 @@ function renderEmployees() {
             <td>${emailCell}</td>
             <td>${oaCell}</td>
             <td>${activeCell}</td>
-            <td class="admin-col ${isAdmin ? '' : 'hidden'}">${actionCell}</td>
+            <td class="admin-col ${isFullAdmin ? '' : 'hidden'}">${actionCell}</td>
         `;
         tbody.appendChild(row);
     });
@@ -634,7 +637,7 @@ function updateAdminUI() {
     const isFullAdmin = isAdmin && userRole === 'admin';
 
     document.querySelectorAll('.admin-col').forEach(el => {
-        if (isAdmin) el.classList.remove('hidden');
+        if (isFullAdmin) el.classList.remove('hidden');
         else el.classList.add('hidden');
     });
 
