@@ -1,11 +1,7 @@
-// JSONBin Bins for Distribution (Shared with Urlaubsplaner V2)
-const DISTRIBUTION_BIN_ID = "699c40edae596e708f42284d";
-
 let currentSchedule = [];
 let currentEmployees = [];
 let currentDistribution = [];
 let isAdmin = false;
-let masterKey = null; // Renamed from apiKey to avoid confusion
 let hasUnsavedChanges = false;
 let isLoggedIn = false;
 
@@ -57,12 +53,10 @@ async function init() {
     await loadEmployees(); // Always load employees for login modal
 
     // Check local storage for key
-    const storedKey = localStorage.getItem('journal_api_key');
     const storedRole = localStorage.getItem('journal_user_role');
-    if (storedKey) {
-        masterKey = storedKey;
+    if (storedRole) {
         isLoggedIn = true;
-        // Legacy fallback: if there's a key but no role, it must be an admin from before the update
+        // Legacy fallback: if there's a role, it must be an admin from before the update
         userRole = storedRole || 'admin';
         isAdmin = userRole.includes('admin') || userRole.includes('administrator') || userRole.includes('sekretariat');
         
@@ -144,23 +138,16 @@ async function loadEmployees() {
     }
 }
 
-async function loadDistribution() {
+async function loadDistribution(configSnap = null) {
     try {
-        const docSnap = await db.collection('up_config').doc('main').get();
+        let docSnap = configSnap;
+        if (!docSnap) {
+            docSnap = await db.collection('up_config').doc('main').get();
+        }
         if (docSnap.exists && docSnap.data().distribution) {
             currentDistribution = docSnap.data().distribution;
-        } else if (masterKey) {
-            try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${DISTRIBUTION_BIN_ID}/latest`, {
-                    headers: { "X-Master-Key": masterKey }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    currentDistribution = data.record || [];
-                }
-            } catch (e) {
-                console.warn("Distribution JSONBin fetch failed (CORS/Network block).", e);
-            }
+        } else {
+            currentDistribution = [];
         }
         syncEmployeeIDs();
         renderDistribution();
@@ -912,8 +899,6 @@ window.checkLogin = async function () {
         
         const configSnap = await db.collection('up_config').doc('main').get();
         if (configSnap.exists) {
-            masterKey = configSnap.data().jsonbin_key || configSnap.data().master_key;
-            localStorage.setItem('journal_api_key', masterKey); 
             localStorage.setItem('journal_user_role', userRole);
 
             const mainTabs = document.getElementById('main-tabs');
@@ -924,11 +909,14 @@ window.checkLogin = async function () {
         if (adminPanel) adminPanel.classList.remove('hidden');
         hideLogin();
 
-        await loadSchedule();
-        await loadDistribution();
+        await Promise.all([
+            loadSchedule(),
+            loadDistribution(configSnap)
+        ]);
+
         renderSchedule();
         renderEmployees();
-        renderDistribution();
+        // renderDistribution is called inside loadDistribution
         updateAdminUI();
 
         const standDateEl = document.getElementById('print-stand-date');
@@ -947,8 +935,8 @@ window.checkLogin = async function () {
 
 window.logout = function () {
     isAdmin = false;
-    masterKey = null;
-    localStorage.removeItem('journal_api_key'); // Clear
+    localStorage.removeItem('journal_user_role'); // Clear
+    localStorage.removeItem('journal_api_key'); // Clear legacy keys
 
     location.reload(); 
 }
@@ -1418,19 +1406,7 @@ window.saveSchedule = async function () {
             updatedAt: now
         }, { merge: true });
 
-        // 2. Save Distribution back to JSONBin (Sync with Urlaubsplaner V2 in background)
-        if (masterKey) {
-            fetch(`https://api.jsonbin.io/v3/b/${DISTRIBUTION_BIN_ID}`, {
-                method: 'PUT',
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Master-Key": masterKey
-                },
-                body: JSON.stringify(currentDistribution)
-            }).catch(e => console.warn("JSONBin background save failed:", e));
-        }
-
-        // 3. Save Employees and Distribution to Firestore (Shared with Urlaubsplaner)
+        // 2. Save Employees and Distribution to Firestore (Shared with Urlaubsplaner)
         // Clean employees before saving (remove JW-only UI flags if any, though here we keep them for compatibility)
         await db.collection('up_config').doc('main').set({
             employees: currentEmployees,
