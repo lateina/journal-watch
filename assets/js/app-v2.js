@@ -135,10 +135,20 @@ async function loadEmployees() {
                 };
             });
 
+            // Ensure Admin and Sekretariat exist for Journal Watch Login
+            if (!currentEmployees.some(e => String(e.name || "").toLowerCase().includes('admin'))) {
+                currentEmployees.push({ id: "admin_jw_system", name: "Administrator", role: "admin", pin: "5700", jw_active: false, isOberarzt: false });
+            }
+            if (!currentEmployees.some(e => String(e.name || "").toLowerCase().includes('sekretariat'))) {
+                currentEmployees.push({ id: "sek_jw_system", name: "Sekretariat", role: "sekretariat", pin: "5700", jw_active: false, isOberarzt: false });
+            }
+
             console.log("Mitarbeiter erfolgreich geladen (SSOT):", currentEmployees.length);
         } else {
-            console.warn("No planer_app_state/currentState found in Firestore.");
-            currentEmployees = [];
+            console.warn("No up_config/main found in Firestore.");
+            currentEmployees = [
+                { id: "admin_jw_system", name: "Administrator", role: "admin", pin: "5700", jw_active: false, isOberarzt: false }
+            ];
         }
         
         renderEmployees();
