@@ -131,8 +131,6 @@ async function init() {
     console.log("App initializing...");
     setupEventListeners(); // Bind events first
 
-    await loadEmployees(); // Always load employees for login modal
-
     // Check local storage for key
     const storedRole = localStorage.getItem('journal_user_role');
     if (storedRole) {
@@ -150,16 +148,18 @@ async function init() {
     // Always show main tabs and hide loading (read-only view for everyone)
     const mainTabs = document.getElementById('main-tabs');
     if (mainTabs) mainTabs.classList.remove('hidden');
-    document.getElementById('loading').classList.add('hidden');
 
     setupTabs();
     switchTab('schedule');
 
     // Load all data in parallel for speed
     await Promise.all([
+        loadEmployees(),
         loadSchedule(),
         loadDistribution()
     ]);
+
+    document.getElementById('loading').classList.add('hidden');
 
     // Ensure UI reflects admin state AFTER loading
     updateAdminUI();
@@ -188,16 +188,22 @@ let jwInactiveIds = [];
 
 async function loadEmployees() {
     try {
-        // Load jw_settings for inactive IDs
-        const settingsSnap = await db.collection('up_config').doc('jw_settings').get();
+        // Load all data in parallel
+        const [settingsSnap, docSnap, planerSnap] = await Promise.all([
+            db.collection('up_config').doc('jw_settings').get(),
+            db.collection('up_config').doc('main').get(),
+            db.collection('planer_app_state').doc('currentState').get().catch(e => {
+                console.warn("Failed to load planer_app_state for aliases", e);
+                return null;
+            })
+        ]);
+
         if (settingsSnap.exists) {
             jwInactiveIds = settingsSnap.data().inactive_ids || [];
         } else {
             jwInactiveIds = [];
         }
 
-        // Load employees from Urlaubsplaner (Single Source of Truth)
-        const docSnap = await db.collection('up_config').doc('main').get();
         if (docSnap.exists) {
             const data = docSnap.data();
             const firebaseEmployees = data.employees || [];
@@ -216,26 +222,19 @@ async function loadEmployees() {
                 };
             });
 
-
-
             console.log("Mitarbeiter erfolgreich geladen (SSOT):", currentEmployees.length);
         } else {
             console.warn("No up_config/main found in Firestore.");
             currentEmployees = [];
         }
 
-        // Load legacy Planer570 state to get Rotanden aliases
-        try {
-            const planerSnap = await db.collection('planer_app_state').doc('currentState').get();
-            if (planerSnap.exists) {
-                const data = planerSnap.data();
-                planerEmployees = data.employees || data.mitarbeiter || [];
-            } else {
-                planerEmployees = [];
-            }
-        } catch (e) {
-            console.warn("Failed to load planer_app_state for aliases", e);
+        if (planerSnap && planerSnap.exists) {
+            const data = planerSnap.data();
+            planerEmployees = data.employees || data.mitarbeiter || [];
+        } else {
+            planerEmployees = [];
         }
+
         
         renderEmployees();
         renderSchedule(); // Re-render schedule to populate dropdowns
