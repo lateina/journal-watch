@@ -883,7 +883,6 @@ function renderEmployeeDetails() {
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
             <div>
                 <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Mitarbeiter Details</h2>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Schreibgeschützt (Daten aus Planer570)</div>
             </div>
         </div>
         
