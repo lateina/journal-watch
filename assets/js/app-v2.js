@@ -103,32 +103,44 @@ async function loadSchedule() {
     }
 }
 
+let jwInactiveIds = [];
+
 async function loadEmployees() {
     try {
-        const docSnap = await db.collection('up_config').doc('main').get();
+        // Load jw_settings for inactive IDs
+        const settingsSnap = await db.collection('up_config').doc('jw_settings').get();
+        if (settingsSnap.exists) {
+            jwInactiveIds = settingsSnap.data().inactive_ids || [];
+        } else {
+            jwInactiveIds = [];
+        }
+
+        // Load employees from Urlaubsplaner (Single Source of Truth)
+        const docSnap = await db.collection('planer_app_state').doc('currentState').get();
         if (docSnap.exists) {
             const data = docSnap.data();
-            currentEmployees = data.employees || data.mitarbeiter || [];
+            const firebaseEmployees = data.mitarbeiter || [];
             
-            currentEmployees = currentEmployees.map(emp => {
-            const isOA = emp.role === 'Oberarzt' || emp.role === 'FOA' || emp.role === 'Funktionsoberarzt' || emp.isOberarzt === true;
-            const isSek = String(emp.name || "").toLowerCase().includes('sekretariat') || String(emp.role || "").toLowerCase().includes('sekretariat');
-            
-            return {
-                ...emp,
-                jw_active: emp.jw_active !== false, 
-                isOberarzt: isOA && !isSek
-            };
-        });
+            currentEmployees = firebaseEmployees.map(emp => {
+                const role = (emp.role || emp.rolle || '').toLowerCase();
+                const groups = Array.isArray(emp.groups) ? emp.groups.map(g=>String(g).toLowerCase()) : (emp.group ? [String(emp.group).toLowerCase()] : []);
+                
+                const isOA = role.includes('oberarzt') || role.includes('foa') || groups.some(g => g.includes('oberarzt'));
+                const isSek = String(emp.name || "").toLowerCase().includes('sekretariat') || role.includes('sekretariat');
+                
+                return {
+                    ...emp,
+                    jw_active: !jwInactiveIds.includes(emp.id), 
+                    isOberarzt: isOA && !isSek
+                };
+            });
 
-        console.log("Mitarbeiter erfolgreich geladen:");
-        console.table(currentEmployees.map(e => ({ name: e.name, role: e.role || e.rolle, active: e.jw_active })));
-
-    } else {
-            console.warn("No employee config found in Firestore.");
+            console.log("Mitarbeiter erfolgreich geladen (SSOT):", currentEmployees.length);
+        } else {
+            console.warn("No planer_app_state/currentState found in Firestore.");
             currentEmployees = [];
         }
-        syncEmployeeIDs();
+        
         renderEmployees();
         renderSchedule(); // Re-render schedule to populate dropdowns
     } catch (e) {
@@ -138,109 +150,44 @@ async function loadEmployees() {
     }
 }
 
-async function loadDistribution(configSnap = null) {
+async function loadDistribution() {
     try {
-        let docSnap = configSnap;
-        if (!docSnap) {
-            docSnap = await db.collection('up_config').doc('main').get();
-        }
-        if (docSnap.exists && docSnap.data().distribution) {
-            currentDistribution = docSnap.data().distribution;
-        } else {
-            currentDistribution = [];
-        }
-        syncEmployeeIDs();
+        const snapshot = await db.collection('rotations_v2').get();
+        const assignments = [];
+        snapshot.forEach(docSnap => {
+            const docId = docSnap.id; // e.g. "month_2026_03"
+            const monthId = docId.replace('month_', ''); // "2026_03"
+            const data = docSnap.data();
+            if (data.assignments) {
+                Object.entries(data.assignments).forEach(([areaKey, tokenList]) => {
+                    // Filter out duplicate suffix keys like HFU_month_2026_03
+                    if (areaKey.includes('_month_')) return;
+                    if (Array.isArray(tokenList)) {
+                        tokenList.forEach(token => {
+                            if (token && token.mitarbeiter_id) {
+                                // Lookup employee name
+                                const emp = currentEmployees.find(e => e.id === token.mitarbeiter_id);
+                                assignments.push({
+                                    mi: monthId,
+                                    bi: areaKey.replace(/_/g, '').toLowerCase(),
+                                    ei: token.mitarbeiter_id,
+                                    en: emp ? emp.name : "Unbekannt"
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        currentDistribution = assignments;
+        console.log("Distribution loaded (SSOT):", currentDistribution.length);
         renderDistribution();
     } catch (e) {
-        console.warn("Fehler beim Laden der Verteilung:", e);
+        console.warn("Fehler beim Laden der Verteilung (SSOT):", e);
     }
 }
 
-function syncEmployeeIDs() {
-    console.log("syncEmployeeIDs called", {
-        empCount: currentEmployees.length,
-        distCount: currentDistribution.length
-    });
 
-    if (!currentEmployees.length || !currentDistribution.length) return;
-
-    let changed = false;
-    const exclusions = ["93", "elternzeit", "donaustauf", "kelheim", "med1", "med3"];
-
-    // 1. Update IDs for existing employees
-    currentEmployees.forEach(emp => {
-        if (!emp.name) return;
-
-        // Find if this employee has an ID in the distribution data
-        // Search by name (en) - trim and case-insensitive
-        const cleanEmpName = emp.name.trim().toLowerCase();
-
-        // Exact match first
-        let match = currentDistribution.find(d => d.en && d.en.trim().toLowerCase() === cleanEmpName);
-
-        // Fallback: Check if distribution name matches the employee's last name
-        if (!match) {
-            const parts = emp.name.trim().split(/\s+/);
-            if (parts.length > 0) {
-                const lastName = parts[parts.length - 1].toLowerCase();
-                match = currentDistribution.find(d => d.en && d.en.trim().toLowerCase() === lastName);
-            }
-        }
-
-        if (match) {
-            if (match.ei && (!emp.id || emp.id === "")) {
-                emp.id = match.ei;
-                changed = true;
-                console.log(`Assigned ID ${match.ei} to existing employee ${emp.name}`);
-            }
-        }
-    });
-
-    // 2. Discover new employees
-    currentDistribution.forEach(d => {
-        if (!d.en || !d.ei) return;
-
-        // Skip if this specific entry is in an excluded area
-        const area = (d.bi || "").toLowerCase();
-        if (exclusions.some(ex => area.includes(ex))) return;
-
-        const distId = d.ei.trim();
-        const distName = d.en.trim();
-
-        // Check if already exists in currentEmployees
-        const exists = currentEmployees.find(emp => {
-            if (emp.id === distId) return true;
-
-            const cleanEmpName = (emp.name || "").trim().toLowerCase();
-            const cleanDistName = distName.toLowerCase();
-            if (cleanEmpName === cleanDistName) return true;
-
-            const empParts = cleanEmpName.split(/\s+/);
-            if (empParts.length > 0 && empParts[empParts.length - 1] === cleanDistName) return true;
-
-            return false;
-        });
-
-        if (!exists) {
-            console.log(`New employee discovered: ${distName} (${distId}) in area ${d.bi}`);
-            currentEmployees.push({
-                id: distId,
-                name: distName,
-                email: "@",
-                active: true,
-                isOberarzt: false
-            });
-            changed = true;
-        }
-    });
-
-    if (changed) {
-        console.log("Sync complete, table updated.");
-        renderEmployees();
-    } else {
-        console.log("Sync complete, no changes.");
-    }
-}
 
 function renderDistribution() {
     const table = document.getElementById('distribution-table');
@@ -673,37 +620,35 @@ function renderEmployeeDetails() {
     detailContainer.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
             <div>
-                <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Mitarbeiter bearbeiten</h2>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Ausgewählt: ${emp.name}</div>
+                <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Mitarbeiter Details</h2>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Schreibgeschützt (Daten aus Planer570)</div>
             </div>
-            <button class="btn btn-danger" onclick="deleteEmployee(${selectedEmpIndex})">🗑️ Löschen</button>
         </div>
         
         <div class="detail-form-group">
             <label>Name</label>
-            <input type="text" class="edit-field" value="${emp.name || ''}" onchange="updateEmployee(${selectedEmpIndex}, 'name', this.value)">
+            <div style="padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.name || '-'}</div>
         </div>
         
         <div class="detail-form-group">
             <label>System-ID</label>
-            <input type="text" class="edit-field" value="${emp.id || ''}" onchange="updateEmployee(${selectedEmpIndex}, 'id', this.value)">
-            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Muss mit der ID im Planer570 (bzw. Urlaubsplaner) übereinstimmen.</div>
+            <div style="padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.id || '-'}</div>
         </div>
         
         <div class="detail-form-group">
             <label>E-Mail Adresse</label>
-            <input type="email" class="edit-field" value="${emp.email || ''}" onchange="updateEmployee(${selectedEmpIndex}, 'email', this.value)">
+            <div style="padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.email || '-'}</div>
         </div>
         
         <div style="display: flex; gap: 2rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
-            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                <input type="checkbox" ${emp.isOberarzt ? 'checked' : ''} onchange="updateEmployee(${selectedEmpIndex}, 'isOberarzt', this.checked)">
+            <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
+                <input type="checkbox" disabled ${emp.isOberarzt ? 'checked' : ''}>
                 <span style="font-weight: 500;">Ist Oberarzt</span>
-            </label>
+            </div>
             
             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" class="custom-tooltip" data-tooltip="Entfernt den Mitarbeiter temporär aus der Zuteilung (z.B. Elternzeit, Rotation).">
                 <input type="checkbox" ${emp.jw_active ? 'checked' : ''} onchange="updateEmployee(${selectedEmpIndex}, 'jw_active', this.checked)">
-                <span style="font-weight: 500;">Aktiv (in Zuteilung)</span>
+                <span style="font-weight: 500; color: var(--text-main);">Aktiv (in Zuteilung)</span>
             </label>
         </div>
     `;
@@ -849,28 +794,23 @@ window.updateSlot = function (index, field, value) {
 }
 
 window.updateEmployee = function (index, field, value) {
-    currentEmployees[index][field] = value;
-    setUnsavedChanges(true);
-    // If name or active status changes, we must re-render the schedule dropdowns
-    if (field === 'name' || field === 'active') {
-        renderSchedule();
-    }
-}
-
-window.addEmployee = function () {
-    if (!currentEmployees) currentEmployees = [];
-    currentEmployees.push({ id: "", name: "Neu", email: "@", active: true, isOberarzt: false });
-    setUnsavedChanges(true);
-    renderEmployees();
-    renderSchedule(); // Update dropdowns immediately
-}
-
-window.deleteEmployee = function (index) {
-    if (confirm("Mitarbeiter wirklich löschen?")) {
-        currentEmployees.splice(index, 1);
+    if (field === 'jw_active') {
+        currentEmployees[index].jw_active = value;
+        const empId = currentEmployees[index].id;
+        
+        if (value) {
+            // Remove from inactive list
+            jwInactiveIds = jwInactiveIds.filter(id => id !== empId);
+        } else {
+            // Add to inactive list
+            if (empId && !jwInactiveIds.includes(empId)) {
+                jwInactiveIds.push(empId);
+            }
+        }
+        
         setUnsavedChanges(true);
-        renderEmployees();
-        renderSchedule(); // Update dropdowns immediately
+        renderSchedule(); // Re-render schedule to update dropdowns
+        renderEmployees(); // Re-render employee list to update badges
     }
 }
 
@@ -1515,11 +1455,9 @@ window.saveSchedule = async function () {
             updatedAt: now
         }, { merge: true });
 
-        // 2. Save Employees and Distribution to Firestore (Shared with Urlaubsplaner)
-        // Clean employees before saving (remove JW-only UI flags if any, though here we keep them for compatibility)
-        await db.collection('up_config').doc('main').set({
-            employees: currentEmployees,
-            distribution: currentDistribution,
+        // 2. Save jw_settings (inactive IDs)
+        await db.collection('up_config').doc('jw_settings').set({
+            inactive_ids: jwInactiveIds,
             updatedAt: now
         }, { merge: true });
 
