@@ -721,6 +721,27 @@ function renderEmployeeDetails() {
 
     const emp = currentEmployees[selectedEmpIndex];
     
+    let rotandenHTML = '';
+    if (planerEmployees && planerEmployees.length > 0) {
+        const pEmp = planerEmployees.find(p => p.name === emp.name || p.mitarbeiter_name === emp.name);
+        if (pEmp && pEmp.is_rotandenstelle && Array.isArray(pEmp.rotanden_namen)) {
+            const list = pEmp.rotanden_namen.map(rn => {
+                return `<div style="font-size: 0.9rem; padding: 0.25rem 0; border-bottom: 1px solid #e2e8f0;">
+                    <span style="font-weight: 500; color: var(--text);">${rn.name || 'Unbekannt'}</span> 
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">(${rn.von || 'Anfang'} bis ${rn.bis || 'Ende'})</span>
+                </div>`;
+            }).join('');
+            
+            rotandenHTML = `
+            <div class="detail-form-group" style="margin-top: 1rem;">
+                <label>Zugewiesene Namen (Historie)</label>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.5rem 1rem;">
+                    ${list || '<div style="color: var(--text-muted); font-size: 0.9rem;">Keine Zuweisungen hinterlegt.</div>'}
+                </div>
+            </div>`;
+        }
+    }
+    
     if (!isFullAdmin) {
         detailContainer.innerHTML = `
             <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">${emp.name}</h2>
@@ -729,6 +750,7 @@ function renderEmployeeDetails() {
                 <div><strong>Email:</strong> ${emp.email || '-'}</div>
                 <div><strong>Rolle:</strong> ${emp.isOberarzt ? 'Oberarzt' : 'Assistenzarzt'}</div>
                 <div><strong>Status:</strong> ${emp.jw_active ? 'Aktiv in Verteilung' : 'Inaktiv (Pausiert)'}</div>
+                ${rotandenHTML ? `<div><strong>Alias Zuweisungen:</strong><div style="margin-top:0.5rem;">${rotandenHTML}</div></div>` : ''}
             </div>
         `;
         return;
@@ -747,9 +769,10 @@ function renderEmployeeDetails() {
             <div style="font-size:1.1rem; font-weight:600; color:var(--text);">${emp.name || '-'}</div>
         </div>
         <div class="detail-form-group">
-            <label>Aktueller Alias / Name (falls Rotand)</label>
+            <label>Aktueller Alias / Name (heute)</label>
             <div style="font-size:1rem; font-weight:500; color:var(--accent);">${getActiveRotandName(emp.name, new Date()) || '-'}</div>
         </div>
+        ${rotandenHTML}
         <div class="detail-form-group">
             <label>System-ID</label>
             <div style="padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.id || '-'}</div>
