@@ -795,13 +795,6 @@ function updateAdminUI() {
         bulkImportSection.classList.add('hidden');
     }
 
-    // Toggle Distribution Tab Button
-    const distributionTabBtn = document.querySelector('button[data-tab="distribution"]');
-    if (distributionTabBtn) {
-        if (isAdmin) distributionTabBtn.classList.remove('hidden');
-        else distributionTabBtn.classList.add('hidden');
-    }
-
     // Toggle Logout Button
     // Login / Logout Buttons in Header
     const loginBtn = document.getElementById('login-header-btn');
