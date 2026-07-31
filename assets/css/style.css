@@ -492,7 +492,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 .detail-form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .detail-form-group label {

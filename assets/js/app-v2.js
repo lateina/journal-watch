@@ -849,9 +849,9 @@ function renderEmployeeDetails() {
             }).join('');
             
             rotandenHTML = `
-            <div class="detail-form-group" style="margin-top: 1rem;">
+            <div class="detail-form-group" style="margin-top: 0.5rem;">
                 <label>Zugewiesene Namen (Historie)</label>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.5rem 1rem;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.25rem 0.75rem;">
                     ${list || '<div style="color: var(--text-muted); font-size: 0.9rem;">Keine Zuweisungen hinterlegt.</div>'}
                 </div>
             </div>`;
@@ -876,20 +876,20 @@ function renderEmployeeDetails() {
     }
 
     const statsHTML = `
-        <div class="detail-form-group" style="margin-top: 1rem;">
+        <div class="detail-form-group" style="margin-top: 0.5rem;">
             <label>Statistik (Journal Watch)</label>
-            <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-                <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.75rem; border-radius: 0.5rem; text-align: center;">
-                    <div style="font-size: 1.25rem; font-weight: 700; color: #166534;">${statsGehalten}</div>
-                    <div style="font-size: 0.8rem; color: #15803d; font-weight: 500;">Gehalten</div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.5rem; border-radius: 0.5rem; text-align: center;">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #166534;">${statsGehalten}</div>
+                    <div style="font-size: 0.75rem; color: #15803d; font-weight: 500;">Gehalten</div>
                 </div>
-                <div style="flex: 1; background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center;">
-                    <div style="font-size: 1.25rem; font-weight: 700; color: #991b1b;">${statsVergessen}</div>
-                    <div style="font-size: 0.8rem; color: #b91c1c; font-weight: 500;">Vergessen</div>
+                <div style="flex: 1; background: #fef2f2; border: 1px solid #fecaca; padding: 0.5rem; border-radius: 0.5rem; text-align: center;">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #991b1b;">${statsVergessen}</div>
+                    <div style="font-size: 0.75rem; color: #b91c1c; font-weight: 500;">Vergessen</div>
                 </div>
-                <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.75rem; border-radius: 0.5rem; text-align: center;">
-                    <div style="font-size: 1.25rem; font-weight: 700; color: #1e40af;">${statsGetauscht}</div>
-                    <div style="font-size: 0.8rem; color: #1d4ed8; font-weight: 500;">Getauscht</div>
+                <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.5rem; border-radius: 0.5rem; text-align: center;">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #1e40af;">${statsGetauscht}</div>
+                    <div style="font-size: 0.75rem; color: #1d4ed8; font-weight: 500;">Getauscht</div>
                 </div>
             </div>
         </div>
@@ -911,7 +911,7 @@ function renderEmployeeDetails() {
     }
 
     detailContainer.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
             <div>
                 <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Mitarbeiter Details</h2>
             </div>
@@ -929,15 +929,15 @@ function renderEmployeeDetails() {
         ${statsHTML}
         <div class="detail-form-group">
             <label>System-ID</label>
-            <div style="padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.id || '-'}</div>
+            <div style="padding: 0.4rem 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.id || '-'}</div>
         </div>
         
         <div class="detail-form-group">
             <label>E-Mail Adresse</label>
-            <div style="padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.email || '-'}</div>
+            <div style="padding: 0.4rem 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.email || '-'}</div>
         </div>
         
-        <div style="display: flex; gap: 2rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
+        <div style="display: flex; gap: 2rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
             <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
                 <input type="checkbox" disabled ${emp.isOberarzt ? 'checked' : ''}>
                 <span style="font-weight: 500;">Ist Oberarzt</span>
