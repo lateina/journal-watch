@@ -827,6 +827,43 @@ function renderEmployeeDetails() {
         }
     }
     
+    let statsGehalten = 0;
+    let statsVergessen = 0;
+    let statsGetauscht = 0;
+
+    if (currentSchedule && Array.isArray(currentSchedule)) {
+        currentSchedule.forEach(s => {
+            if (s.presenter === emp.name && !checkHoliday(new Date(s.date))) {
+                if (!s.forgotten) {
+                    statsGehalten++;
+                    if (s.isSwapped) statsGetauscht++;
+                } else {
+                    statsVergessen++;
+                }
+            }
+        });
+    }
+
+    const statsHTML = `
+        <div class="detail-form-group" style="margin-top: 1rem;">
+            <label>Statistik (Journal Watch)</label>
+            <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.75rem; border-radius: 0.5rem; text-align: center;">
+                    <div style="font-size: 1.25rem; font-weight: 700; color: #166534;">${statsGehalten}</div>
+                    <div style="font-size: 0.8rem; color: #15803d; font-weight: 500;">Gehalten</div>
+                </div>
+                <div style="flex: 1; background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center;">
+                    <div style="font-size: 1.25rem; font-weight: 700; color: #991b1b;">${statsVergessen}</div>
+                    <div style="font-size: 0.8rem; color: #b91c1c; font-weight: 500;">Vergessen</div>
+                </div>
+                <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.75rem; border-radius: 0.5rem; text-align: center;">
+                    <div style="font-size: 1.25rem; font-weight: 700; color: #1e40af;">${statsGetauscht}</div>
+                    <div style="font-size: 0.8rem; color: #1d4ed8; font-weight: 500;">Getauscht</div>
+                </div>
+            </div>
+        </div>
+    `;
+
     if (!isFullAdmin) {
         detailContainer.innerHTML = `
             <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">${emp.name}</h2>
@@ -836,6 +873,7 @@ function renderEmployeeDetails() {
                 <div><strong>Rolle:</strong> ${emp.isOberarzt ? 'Oberarzt' : 'Assistenzarzt'}</div>
                 <div><strong>Status:</strong> ${emp.jw_active ? 'Aktiv in Verteilung' : 'Inaktiv (Pausiert)'}</div>
                 ${rotandenHTML ? `<div><strong>Alias Zuweisungen:</strong><div style="margin-top:0.5rem;">${rotandenHTML}</div></div>` : ''}
+                ${statsHTML}
             </div>
         `;
         return;
@@ -858,6 +896,7 @@ function renderEmployeeDetails() {
             <div style="font-size:1rem; font-weight:500; color:var(--accent);">${getActiveRotandName(emp.name, new Date()) || '-'}</div>
         </div>
         ${rotandenHTML}
+        ${statsHTML}
         <div class="detail-form-group">
             <label>System-ID</label>
             <div style="padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.id || '-'}</div>
