@@ -336,6 +336,10 @@ window.getActiveRotandName = function(empName, dateObj) {
         
         const parseMonth = (str) => {
             if (!str) return null;
+            if (str.includes('-')) {
+                const parts = str.split('-');
+                if (parts.length >= 2) return `${parts[0]}-${parts[1].padStart(2, '0')}`;
+            }
             const parts = str.split('/');
             if (parts.length === 2) return `${parts[1]}-${parts[0].padStart(2, '0')}`;
             return null;
@@ -352,6 +356,10 @@ window.getActiveRotandName = function(empName, dateObj) {
     if (activeNames.length > 0) {
         const parseMonth = (str) => {
             if (!str) return null;
+            if (str.includes('-')) {
+                const parts = str.split('-');
+                if (parts.length >= 2) return `${parts[0]}-${parts[1].padStart(2, '0')}`;
+            }
             const parts = str.split('/');
             if (parts.length === 2) return `${parts[1]}-${parts[0].padStart(2, '0')}`;
             return null;
