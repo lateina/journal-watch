@@ -105,9 +105,22 @@ function setupEventListeners() {
         }
         
         selectEmployee(filtered[currentIndex].originalIndex);
+        
         setTimeout(() => {
+            const container = document.getElementById('employee-list-container');
             const selectedEl = document.querySelector('#employee-list-container .emp-list-item.selected');
-            if (selectedEl) selectedEl.scrollIntoView({ block: 'nearest' });
+            if (container && selectedEl) {
+                const cHeight = container.clientHeight;
+                const cScrollTop = container.scrollTop;
+                const elTop = selectedEl.offsetTop;
+                const elHeight = selectedEl.offsetHeight;
+                
+                if (elTop < cScrollTop) {
+                    container.scrollTop = elTop;
+                } else if (elTop + elHeight > cScrollTop + cHeight) {
+                    container.scrollTop = elTop + elHeight - cHeight;
+                }
+            }
         }, 0);
     });
 }
@@ -698,6 +711,7 @@ function renderEmployees() {
             
             const div = document.createElement('div');
             div.className = `emp-list-item ${selectedEmpIndex === index ? 'selected' : ''}`;
+            div.setAttribute('data-index', index);
             if (!emp.active && !emp.jw_active) div.style.opacity = '0.5';
             
             div.onclick = () => selectEmployee(index);
@@ -726,7 +740,17 @@ function renderEmployees() {
 
 window.selectEmployee = function(index) {
     selectedEmpIndex = index;
-    renderEmployees(); // re-render to update selection style and details
+    
+    // Update selection UI without full re-render
+    document.querySelectorAll('#employee-list-container .emp-list-item').forEach(el => {
+        el.classList.remove('selected');
+    });
+    const selectedEl = document.querySelector(`#employee-list-container .emp-list-item[data-index="${index}"]`);
+    if (selectedEl) {
+        selectedEl.classList.add('selected');
+    }
+    
+    renderEmployeeDetails();
 }
 
 function renderEmployeeDetails() {
