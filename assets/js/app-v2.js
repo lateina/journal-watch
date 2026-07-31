@@ -42,6 +42,34 @@ function setupEventListeners() {
     // Print Button
     const printBtn = document.getElementById('print-btn');
     if (printBtn) printBtn.addEventListener('click', () => showPrintModal());
+
+    // Login search keyboard navigation
+    const loginSearchInput = document.getElementById('login-name-search');
+    if (loginSearchInput) {
+        loginSearchInput.addEventListener('keydown', (e) => {
+            const items = document.querySelectorAll('#login-search-results .user-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                loginSearchIndex = (loginSearchIndex + 1) % items.length;
+                updateLoginSearchHighlight();
+                items[loginSearchIndex].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                loginSearchIndex = (loginSearchIndex - 1 + items.length) % items.length;
+                updateLoginSearchHighlight();
+                items[loginSearchIndex].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (loginSearchIndex >= 0 && loginSearchIndex < items.length) {
+                    items[loginSearchIndex].click();
+                } else if (items.length > 0) {
+                    items[0].click();
+                }
+            }
+        });
+    }
 }
 
 // --- Initialization ---
@@ -849,10 +877,23 @@ window.showLogin = function () {
     if (results) results.classList.add('hidden');
 }
 
+let loginSearchIndex = -1;
+window.updateLoginSearchHighlight = function() {
+    const items = document.querySelectorAll('#login-search-results .user-item');
+    items.forEach((item, idx) => {
+        if (idx === loginSearchIndex) {
+            item.style.backgroundColor = '#f1f5f9'; // Hover background
+        } else {
+            item.style.backgroundColor = 'transparent';
+        }
+    });
+};
+
 window.filterLoginNames = function () {
     const searchInput = document.getElementById('login-name-search');
     const resultsContainer = document.getElementById('login-search-results');
     const query = searchInput.value.toLowerCase().trim();
+    loginSearchIndex = -1;
 
     if (!query) {
         resultsContainer.classList.add('hidden');
@@ -888,6 +929,10 @@ window.filterLoginNames = function () {
             div.style.cursor = 'pointer';
             div.style.borderBottom = '1px solid #eee';
             div.textContent = emp.name || "Unbekannt";
+            div.onmouseenter = () => {
+                loginSearchIndex = Array.from(resultsContainer.children).indexOf(div);
+                updateLoginSearchHighlight();
+            };
             div.onclick = () => selectLoginName(emp);
             resultsContainer.appendChild(div);
         });
