@@ -116,7 +116,7 @@ async function loadEmployees() {
         }
 
         // Load employees from Urlaubsplaner (Single Source of Truth)
-        const docSnap = await db.collection('planer_app_state').doc('currentState').get();
+        const docSnap = await db.collection('up_config').doc('main').get();
         if (docSnap.exists) {
             const data = docSnap.data();
             const firebaseEmployees = data.employees || [];
