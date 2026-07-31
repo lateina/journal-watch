@@ -72,6 +72,7 @@ async function init() {
     document.getElementById('loading').classList.add('hidden');
 
     setupTabs();
+    switchTab('schedule');
 
     // Load all data in parallel for speed
     await Promise.all([
