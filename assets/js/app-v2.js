@@ -788,6 +788,15 @@ function renderEmployeeDetails() {
                 if (parts.length === 3) {
                     return `${parts[0].padStart(2, '0')}.${parts[1].padStart(2, '0')}.${parts[2]}`;
                 }
+                
+                // Handle YYYY-MM-DD
+                if (str.includes('-')) {
+                    const dParts = str.split('-');
+                    if (dParts.length === 3) {
+                        return `${dParts[2].padStart(2, '0')}.${dParts[1].padStart(2, '0')}.${dParts[0]}`;
+                    }
+                }
+                
                 return str.replace(/\//g, '.');
             };
 
