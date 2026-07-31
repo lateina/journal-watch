@@ -740,10 +740,33 @@ function renderEmployeeDetails() {
     if (planerEmployees && planerEmployees.length > 0) {
         const pEmp = planerEmployees.find(p => p.name === emp.name || p.mitarbeiter_name === emp.name);
         if (pEmp && pEmp.is_rotandenstelle && Array.isArray(pEmp.rotanden_namen)) {
+            const formatGermanDate = (str, isEnd) => {
+                if (!str) return '';
+                const parts = str.split('/');
+                if (parts.length === 2) {
+                    const mm = parseInt(parts[0], 10);
+                    const yyyy = parseInt(parts[1], 10);
+                    if (!isNaN(mm) && !isNaN(yyyy)) {
+                        if (isEnd) {
+                            const lastDay = new Date(yyyy, mm, 0).getDate();
+                            return `${String(lastDay).padStart(2, '0')}.${String(mm).padStart(2, '0')}.${yyyy}`;
+                        } else {
+                            return `01.${String(mm).padStart(2, '0')}.${yyyy}`;
+                        }
+                    }
+                }
+                if (parts.length === 3) {
+                    return `${parts[0].padStart(2, '0')}.${parts[1].padStart(2, '0')}.${parts[2]}`;
+                }
+                return str.replace(/\//g, '.');
+            };
+
             const list = pEmp.rotanden_namen.map(rn => {
+                const startStr = formatGermanDate(rn.von, false) || 'Anfang';
+                const endStr = formatGermanDate(rn.bis, true) || 'Ende';
                 return `<div style="font-size: 0.9rem; padding: 0.25rem 0; border-bottom: 1px solid #e2e8f0;">
                     <span style="font-weight: 500; color: var(--text);">${rn.name || 'Unbekannt'}</span> 
-                    <span style="color: var(--text-muted); font-size: 0.8rem;">(${rn.von || 'Anfang'} bis ${rn.bis || 'Ende'})</span>
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">(${startStr} bis ${endStr})</span>
                 </div>`;
             }).join('');
             
