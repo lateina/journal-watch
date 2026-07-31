@@ -72,38 +72,44 @@ function setupEventListeners() {
         });
     }
 
-    // Admin Employee Search keyboard navigation
-    const empSearchInput = document.getElementById('emp-admin-search');
-    if (empSearchInput) {
-        empSearchInput.addEventListener('keydown', (e) => {
-            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-            e.preventDefault();
-            
-            const searchTerm = empSearchInput.value.toLowerCase();
-            const filtered = currentEmployees.map((emp, index) => ({ emp, originalIndex: index }))
-                .filter(item => {
-                    const name = item.emp.name || '';
-                    const id = item.emp.id || '';
-                    return name.toLowerCase().includes(searchTerm) || id.toLowerCase().includes(searchTerm);
-                });
-                
-            if (filtered.length === 0) return;
+    // Admin Employee List keyboard navigation (works across the whole tab)
+    document.addEventListener('keydown', (e) => {
+        const empTab = document.getElementById('tab-employees');
+        if (!empTab || empTab.classList.contains('hidden')) return;
 
-            let currentIndex = filtered.findIndex(item => item.originalIndex === selectedEmpIndex);
+        // Don't hijack if typing in another input/textarea (except search)
+        if (e.target.tagName === 'INPUT' && e.target.id !== 'emp-admin-search') return;
+        if (e.target.tagName === 'TEXTAREA') return;
+
+        if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+        e.preventDefault();
+        
+        const empSearchInput = document.getElementById('emp-admin-search');
+        const searchTerm = empSearchInput ? empSearchInput.value.toLowerCase() : '';
+        
+        const filtered = currentEmployees.map((emp, index) => ({ emp, originalIndex: index }))
+            .filter(item => {
+                const name = item.emp.name || '';
+                const id = item.emp.id || '';
+                return name.toLowerCase().includes(searchTerm) || id.toLowerCase().includes(searchTerm);
+            });
             
-            if (e.key === 'ArrowDown') {
-                currentIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % filtered.length;
-            } else if (e.key === 'ArrowUp') {
-                currentIndex = currentIndex <= 0 ? filtered.length - 1 : currentIndex - 1;
-            }
-            
-            selectEmployee(filtered[currentIndex].originalIndex);
-            setTimeout(() => {
-                const selectedEl = document.querySelector('#employee-list-container .emp-list-item.selected');
-                if (selectedEl) selectedEl.scrollIntoView({ block: 'nearest' });
-            }, 0);
-        });
-    }
+        if (filtered.length === 0) return;
+
+        let currentIndex = filtered.findIndex(item => item.originalIndex === selectedEmpIndex);
+        
+        if (e.key === 'ArrowDown') {
+            currentIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % filtered.length;
+        } else if (e.key === 'ArrowUp') {
+            currentIndex = currentIndex <= 0 ? filtered.length - 1 : currentIndex - 1;
+        }
+        
+        selectEmployee(filtered[currentIndex].originalIndex);
+        setTimeout(() => {
+            const selectedEl = document.querySelector('#employee-list-container .emp-list-item.selected');
+            if (selectedEl) selectedEl.scrollIntoView({ block: 'nearest' });
+        }, 0);
+    });
 }
 
 // --- Initialization ---
