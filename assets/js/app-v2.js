@@ -118,7 +118,7 @@ async function loadEmployees() {
         const docSnap = await db.collection('planer_app_state').doc('currentState').get();
         if (docSnap.exists) {
             const data = docSnap.data();
-            const firebaseEmployees = data.mitarbeiter || [];
+            const firebaseEmployees = data.employees || [];
             
             currentEmployees = firebaseEmployees.map(emp => {
                 const role = (emp.role || emp.rolle || '').toLowerCase();
