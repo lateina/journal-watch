@@ -331,7 +331,22 @@ window.getActiveRotandName = function(empName, dateObj) {
     });
     
     if (activeNames.length > 0) {
-        return activeNames.map(rn => rn.name).join(', ');
+        const parseMonth = (str) => {
+            if (!str) return null;
+            const parts = str.split('/');
+            if (parts.length === 2) return `${parts[1]}-${parts[0].padStart(2, '0')}`;
+            return null;
+        };
+        
+        // Prefer entries that have at least one explicit date bound
+        const explicitMatches = activeNames.filter(rn => parseMonth(rn.von) || parseMonth(rn.bis));
+        
+        if (explicitMatches.length > 0) {
+            return explicitMatches.map(rn => rn.name).join(' / ');
+        }
+        
+        // Fallback to all matches if none have valid bounds
+        return activeNames.map(rn => rn.name).join(' / ');
     }
     return null;
 }
