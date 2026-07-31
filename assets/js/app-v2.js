@@ -861,13 +861,13 @@ window.filterLoginNames = function () {
     // We ignore the 'active' status here because you must be able to log in even if inactive
     const specialNames = ['admin', 'Administrator', 'Sekretariat'];
     const specialMatches = currentEmployees.filter(emp => {
-        const name = emp.name.toLowerCase();
+        const name = String(emp.name || "").toLowerCase();
         return (specialNames.some(sn => name.includes(sn.toLowerCase())) || name.startsWith('admin')) && name.includes(query);
     });
 
     // 2. Search for others who might have the role
     const otherMatches = currentEmployees.filter(emp => {
-        const name = emp.name.toLowerCase();
+        const name = String(emp.name || "").toLowerCase();
         const isSpecial = specialNames.some(sn => name.includes(sn.toLowerCase()) || name.startsWith('admin'));
         if (isSpecial) return false; 
 
@@ -885,7 +885,7 @@ window.filterLoginNames = function () {
             div.style.padding = '10px';
             div.style.cursor = 'pointer';
             div.style.borderBottom = '1px solid #eee';
-            div.textContent = emp.name;
+            div.textContent = emp.name || "Unbekannt";
             div.onclick = () => selectLoginName(emp);
             resultsContainer.appendChild(div);
         });
