@@ -60,17 +60,16 @@ async function init() {
         userRole = storedRole || 'admin';
         isAdmin = userRole.includes('admin') || userRole.includes('administrator') || userRole.includes('sekretariat');
         
-        const mainTabs = document.getElementById('main-tabs');
-        if (mainTabs) mainTabs.classList.remove('hidden');
-
         const adminPanel = document.getElementById('admin-panel');
         if (adminPanel && isAdmin) {
             adminPanel.classList.remove('hidden');
         }
-    } else {
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('error-message').classList.remove('hidden');
     }
+    
+    // Always show main tabs and hide loading (read-only view for everyone)
+    const mainTabs = document.getElementById('main-tabs');
+    if (mainTabs) mainTabs.classList.remove('hidden');
+    document.getElementById('loading').classList.add('hidden');
 
     setupTabs();
 
@@ -689,10 +688,17 @@ function updateAdminUI() {
     }
 
     // Toggle Logout Button
+    // Login / Logout Buttons in Header
+    const loginBtn = document.getElementById('login-header-btn');
     const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        if (isLoggedIn) logoutBtn.classList.remove('hidden');
-        else logoutBtn.classList.add('hidden');
+    if (loginBtn && logoutBtn) {
+        if (isLoggedIn) {
+            loginBtn.classList.add('hidden');
+            logoutBtn.classList.remove('hidden');
+        } else {
+            loginBtn.classList.remove('hidden');
+            logoutBtn.classList.add('hidden');
+        }
     }
 }
 
