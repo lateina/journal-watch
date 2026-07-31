@@ -1,5 +1,6 @@
 let currentSchedule = [];
 let currentEmployees = [];
+let planerEmployees = [];
 let currentDistribution = [];
 let isAdmin = false;
 let hasUnsavedChanges = false;
@@ -170,6 +171,19 @@ async function loadEmployees() {
             console.warn("No up_config/main found in Firestore.");
             currentEmployees = [];
         }
+
+        // Load legacy Planer570 state to get Rotanden aliases
+        try {
+            const planerSnap = await db.collection('planer_app_state').doc('currentState').get();
+            if (planerSnap.exists) {
+                const data = planerSnap.data();
+                planerEmployees = data.employees || data.mitarbeiter || [];
+            } else {
+                planerEmployees = [];
+            }
+        } catch (e) {
+            console.warn("Failed to load planer_app_state for aliases", e);
+        }
         
         renderEmployees();
         renderSchedule(); // Re-render schedule to populate dropdowns
@@ -256,10 +270,51 @@ function showError(msg) {
 
 // --- Rendering ---
 
-function renderSchedule() {
-    const tbody = document.getElementById('schedule-body');
-    // Update UI visibility
+window.getActiveRotandName = function(empName, dateObj) {
+    if (!planerEmployees || planerEmployees.length === 0) return null;
+    const pEmp = planerEmployees.find(p => p.name === empName);
+    if (!pEmp || !pEmp.is_rotandenstelle) return null;
+    
+    if (!pEmp.rotanden_namen || !Array.isArray(pEmp.rotanden_namen)) return null;
+    
+    const targetMonthId = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+    
+    const activeNames = pEmp.rotanden_namen.filter(rn => {
+        if (!rn.name) return false;
+        
+        const parseMonth = (str) => {
+            if (!str) return null;
+            const parts = str.split('/');
+            if (parts.length === 2) return `${parts[1]}-${parts[0].padStart(2, '0')}`;
+            return null;
+        };
+        
+        const start = parseMonth(rn.von);
+        const end = parseMonth(rn.bis);
+        
+        if (start && start > targetMonthId) return false;
+        if (end && end < targetMonthId) return false;
+        return true;
+    });
+    
+    if (activeNames.length > 0) {
+        return activeNames.map(rn => rn.name).join(', ');
+    }
+    return null;
+}
+
+window.renderSchedule = function () {
     const table = document.getElementById('schedule-table');
+    const tbody = document.getElementById('schedule-body');
+    if (!table || !tbody) return;
+
+    // Hide error message on successful render
+    const errorDiv = document.getElementById('error-message');
+    if (errorDiv) {
+        errorDiv.classList.add('hidden');
+    }
+
+    // Update UI visibility
     const controls = document.getElementById('schedule-controls');
     if (table) table.classList.remove('hidden');
     if (controls) {
@@ -267,15 +322,6 @@ function renderSchedule() {
         controls.style.display = 'flex';
     }
     document.getElementById('loading').classList.add('hidden');
-
-    // Hide error message on successful render
-    const errorDiv = document.getElementById('error-message');
-    if (errorDiv) {
-        errorDiv.classList.add('hidden');
-        errorDiv.style.display = ''; // Reset inline display if any
-    }
-
-    table.classList.remove('hidden');
 
     currentSchedule.sort((a, b) => new Date(a.date) - new Date(b.date));
     const today = new Date().toISOString().split('T')[0];
@@ -313,7 +359,11 @@ function renderSchedule() {
         // Check for Holiday / Vacation
         const holidayName = checkHoliday(dateObj);
 
-        let presenterCell = slot.presenter || '<span style="color:#cbd5e1">Frei</span>';
+        let presenterCell = '<span style="color:#cbd5e1">Frei</span>';
+        if (slot.presenter) {
+            const alias = getActiveRotandName(slot.presenter, dateObj);
+            presenterCell = alias ? `<strong>${alias}</strong> <span style="font-size:0.8em;color:gray;">(${slot.presenter})</span>` : slot.presenter;
+        }
         let topicCell = slot.topic || '';
         let isHoliday = false;
         let forgottenCell = "";
@@ -377,7 +427,9 @@ function renderSchedule() {
                         if (emp.jw_active) {
                             if (!!emp.isOberarzt === isOberarztDay || slot.presenter === emp.name) {
                                 const selected = (slot.presenter === emp.name) ? 'selected' : '';
-                                options += `<option value="${emp.name}" ${selected}>${emp.name}</option>`;
+                                const alias = getActiveRotandName(emp.name, dateObj);
+                                const dispName = alias ? `${emp.name} ➡️ ${alias}` : emp.name;
+                                options += `<option value="${emp.name}" ${selected}>${dispName}</option>`;
                             }
                         }
                     });
@@ -600,6 +652,9 @@ function renderEmployees() {
             if (emp.isOberarzt) badges.push('OA');
             if (!emp.jw_active) badges.push('Inaktiv');
             
+            const alias = getActiveRotandName(emp.name, new Date());
+            if (alias) badges.push(`Aktuell: ${alias}`);
+
             div.innerHTML = `
                 <div class="emp-list-item-name">${emp.name || 'Unbenannt'}</div>
                 <div class="emp-list-item-sub">
@@ -656,9 +711,12 @@ function renderEmployeeDetails() {
         
         <div class="detail-form-group">
             <label>Name</label>
-            <div style="padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.name || '-'}</div>
+            <div style="font-size:1.1rem; font-weight:600; color:var(--text);">${emp.name || '-'}</div>
         </div>
-        
+        <div class="detail-form-group">
+            <label>Aktueller Alias / Name (falls Rotand)</label>
+            <div style="font-size:1rem; font-weight:500; color:var(--accent);">${getActiveRotandName(emp.name, new Date()) || '-'}</div>
+        </div>
         <div class="detail-form-group">
             <label>System-ID</label>
             <div style="padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; color: var(--text-muted);">${emp.id || '-'}</div>
