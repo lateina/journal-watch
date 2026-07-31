@@ -188,14 +188,10 @@ let jwInactiveIds = [];
 
 async function loadEmployees() {
     try {
-        // Load all data in parallel
-        const [settingsSnap, docSnap, planerSnap] = await Promise.all([
+        // Load only lightweight data in the critical path
+        const [settingsSnap, docSnap] = await Promise.all([
             db.collection('up_config').doc('jw_settings').get(),
-            db.collection('up_config').doc('main').get(),
-            db.collection('planer_app_state').doc('currentState').get().catch(e => {
-                console.warn("Failed to load planer_app_state for aliases", e);
-                return null;
-            })
+            db.collection('up_config').doc('main').get()
         ]);
 
         if (settingsSnap.exists) {
@@ -228,16 +224,52 @@ async function loadEmployees() {
             currentEmployees = [];
         }
 
-        if (planerSnap && planerSnap.exists) {
-            const data = planerSnap.data();
-            planerEmployees = data.employees || data.mitarbeiter || [];
+        // --- Background load for massive legacy planer state (aliases) ---
+        const fetchPlanerState = async () => {
+            try {
+                const pSnap = await db.collection('planer_app_state').doc('currentState').get();
+                if (pSnap.exists) {
+                    const data = pSnap.data();
+                    const emps = data.employees || data.mitarbeiter || [];
+                    
+                    // Filter to ONLY what we need to save localStorage space
+                    const rotandenEmps = emps.filter(e => e.is_rotandenstelle).map(e => ({
+                        name: e.name,
+                        mitarbeiter_name: e.mitarbeiter_name,
+                        is_rotandenstelle: e.is_rotandenstelle,
+                        rotanden_namen: e.rotanden_namen
+                    }));
+                    
+                    planerEmployees = rotandenEmps;
+                    localStorage.setItem('jw_planer_employees', JSON.stringify(rotandenEmps));
+                    
+                    // Trigger a re-render to show aliases if they arrived late
+                    if (document.getElementById('schedule-table')) {
+                        renderSchedule();
+                        renderEmployeeDetails();
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to load planer_app_state in background", e);
+            }
+        };
+
+        const cachedPlaner = localStorage.getItem('jw_planer_employees');
+        if (cachedPlaner) {
+            try {
+                planerEmployees = JSON.parse(cachedPlaner);
+                fetchPlanerState(); // Revalidate in background
+            } catch (e) {
+                planerEmployees = [];
+                fetchPlanerState();
+            }
         } else {
             planerEmployees = [];
+            fetchPlanerState(); // Don't await, let it load in background!
         }
-
         
         renderEmployees();
-        renderSchedule(); // Re-render schedule to populate dropdowns
+        renderSchedule(); // Initial render with available data
     } catch (e) {
         console.warn("Fehler beim Laden der Mitarbeiter:", e);
         currentEmployees = [];
