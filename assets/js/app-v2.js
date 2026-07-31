@@ -661,12 +661,6 @@ function updateAdminUI() {
         else el.classList.add('hidden');
     });
 
-    const addBtn = document.getElementById('add-employee-btn');
-    if (addBtn) {
-        if (isFullAdmin) addBtn.classList.remove('hidden');
-        else addBtn.classList.add('hidden');
-    }
-
     // Toggle Employee Tab Visibility - For Admin and Sekretariat
     const employeeTabBtn = document.querySelector('button[data-tab="employees"]');
     if (employeeTabBtn) {
@@ -1102,8 +1096,12 @@ window.executeSwap = function (sourceIndex, targetIndex) {
 
 // Start Helper: sortEmployeesByName
 function sortEmployeesByName(a, b) {
-    const nameA = a.name.trim();
-    const nameB = b.name.trim();
+    const nameA = (a.name || "").trim();
+    const nameB = (b.name || "").trim();
+
+    if (!nameA && !nameB) return 0;
+    if (!nameA) return 1;
+    if (!nameB) return -1;
 
     // Extract last name (last word)
     const partsA = nameA.split(' ');
@@ -1463,7 +1461,7 @@ window.saveSchedule = async function () {
 
         // 2. Save jw_settings (inactive IDs)
         await db.collection('up_config').doc('jw_settings').set({
-            inactive_ids: jwInactiveIds,
+                            inactive_ids: jwInactiveIds,
             updatedAt: now
         }, { merge: true });
 
