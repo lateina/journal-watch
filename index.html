@@ -111,35 +111,31 @@
 
             <!-- Employee Tab -->
             <div id="tab-employees" class="tab-content hidden">
-                <div id="bulk-import-section" class="hidden" style="margin-bottom: 2rem; background: #f8fafc; padding: 1.5rem; border-radius: 1rem;">
-                    <h4 style="margin-bottom: 0.5rem;">Mitarbeiter-Import</h4>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-                        Namen und E-Mails pro Zeile einfügen. Automatisches Mapping für ukr.de Adressen aktiv.
-                    </p>
-                    <textarea id="bulk-import-text" rows="4" class="edit-field" style="margin-bottom: 1rem;" placeholder="Max Mustermann max@beispiel.de"></textarea>
-                    <button class="btn btn-primary" onclick="parseEmployeeInput()">🚀 Importieren</button>
-                </div>
+                <div class="emp-admin-layout">
+                    <!-- Left Sidebar (List & Search) -->
+                    <div class="emp-list-sidebar">
+                        <div class="emp-list-header">
+                            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">Mitarbeiter</h3>
+                            <div class="search-input-box" style="margin-bottom: 1rem; background: white;">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" id="emp-admin-search" class="edit-field" placeholder="Suchen..." oninput="renderEmployees()">
+                            </div>
+                        </div>
+                        <div class="emp-list-body" id="employee-list-container">
+                            <!-- List items will be generated here -->
+                        </div>
+                        <div class="emp-list-footer admin-col hidden">
+                            <button class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;" onclick="addEmployee()">➕ Neuer Mitarbeiter</button>
+                            <button class="btn btn-secondary" style="width: 100%;" onclick="importFromPlaner570()">🔄 Import aus Planer570</button>
+                        </div>
+                    </div>
 
-                <div class="table-container">
-                    <table id="employee-table" class="hidden">
-                        <thead>
-                            <tr>
-                                <th style="width: 80px;">ID</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th class="center-text">OA</th>
-                                <th class="center-text">Aktiv</th>
-                                <th class="admin-col hidden">Aktion</th>
-                            </tr>
-                        </thead>
-                        <tbody id="employee-body">
-                            <!-- Rows will be inserted here -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <div style="margin-top: 1.5rem;">
-                    <button id="add-employee-btn" class="btn btn-primary hidden" onclick="addEmployee()">➕ Neuer Mitarbeiter</button>
+                    <!-- Right Main Area (Detail View) -->
+                    <div class="emp-detail-view" id="employee-detail-container">
+                        <div class="center-text" style="color: var(--text-muted); margin-top: 4rem;">
+                            Bitte wählen Sie einen Mitarbeiter aus der Liste.
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -583,54 +583,130 @@ window.toggleForgotten = function (index, isChecked) {
 
     renderSchedule();
 }
+let selectedEmpIndex = null;
+
 function renderEmployees() {
-    const table = document.getElementById('employee-table');
-    const tbody = document.getElementById('employee-body');
-    if (!tbody || !table) return;
+    const listContainer = document.getElementById('employee-list-container');
+    const detailContainer = document.getElementById('employee-detail-container');
+    const searchInput = document.getElementById('emp-admin-search');
+    
+    if (!listContainer || !detailContainer) return;
 
-    // Check if user is full admin
     const isFullAdmin = isAdmin && userRole === 'admin';
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
-    // Make table visible
-    table.classList.remove('hidden');
-
-    // Sort employees using helper
     currentEmployees.sort(sortEmployeesByName);
 
-    tbody.innerHTML = '';
+    listContainer.innerHTML = '';
+    
+    // Filter employees
+    const filteredEmployees = currentEmployees.map((emp, index) => ({ emp, originalIndex: index }))
+        .filter(item => {
+            const name = item.emp.name || '';
+            const id = item.emp.id || '';
+            return name.toLowerCase().includes(searchTerm) || id.toLowerCase().includes(searchTerm);
+        });
 
-    currentEmployees.forEach((emp, index) => {
-        const row = document.createElement('tr');
+    if (filteredEmployees.length === 0) {
+        listContainer.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); font-size: 0.85rem;">Keine Mitarbeiter gefunden.</div>';
+    } else {
+        filteredEmployees.forEach(item => {
+            const emp = item.emp;
+            const index = item.originalIndex;
+            
+            const div = document.createElement('div');
+            div.className = `emp-list-item ${selectedEmpIndex === index ? 'selected' : ''}`;
+            if (!emp.active && !emp.jw_active) div.style.opacity = '0.5';
+            
+            div.onclick = () => selectEmployee(index);
+            
+            let badges = [];
+            if (emp.isOberarzt) badges.push('OA');
+            if (!emp.jw_active) badges.push('Inaktiv');
+            
+            div.innerHTML = `
+                <div class="emp-list-item-name">${emp.name || 'Unbenannt'}</div>
+                <div class="emp-list-item-sub">
+                    ${emp.id || 'Keine ID'}
+                    ${badges.length > 0 ? ` &bull; <span style="color: var(--accent);">${badges.join(', ')}</span>` : ''}
+                </div>
+            `;
+            listContainer.appendChild(div);
+        });
+    }
 
-        let idCell = emp.id || '';
-        let nameCell = emp.name;
-        let emailCell = emp.email;
-        let oaCell = emp.isOberarzt ? "Ja" : "Nein";
-        let activeCell = emp.active ? "Ja" : "Nein";
-        let actionCell = "";
-
-        if (isFullAdmin) {
-            idCell = `<input class="edit-field" value="${emp.id || ''}" onchange="updateEmployee(${index}, 'id', this.value)" style="width: 90px;">`;
-            nameCell = `<input class="edit-field" value="${emp.name || ''}" onchange="updateEmployee(${index}, 'name', this.value)">`;
-            emailCell = `<input class="edit-field" value="${emp.email || ''}" onchange="updateEmployee(${index}, 'email', this.value)">`;
-            oaCell = `<input type="checkbox" ${emp.isOberarzt ? 'checked' : ''} onchange="updateEmployee(${index}, 'isOberarzt', this.checked)">`;
-            const activeTooltip = "Die Checkbox blendet Mitarbeiter temporär aus, die aktuell keine Fortbildungen übernehmen (z. B. durch Rotationen in andere Abteilungen oder längere Abwesenheit)";
-            activeCell = `<span class="custom-tooltip" data-tooltip="${activeTooltip}"><input type="checkbox" ${emp.jw_active ? 'checked' : ''} onchange="updateEmployee(${index}, 'jw_active', this.checked)"></span>`;
-            actionCell = `<button class="delete-btn" onclick="deleteEmployee(${index})">Löschen</button>`;
-        }
-
-        row.innerHTML = `
-            <td>${idCell}</td>
-            <td>${nameCell}</td>
-            <td>${emailCell}</td>
-            <td>${oaCell}</td>
-            <td>${activeCell}</td>
-            <td class="admin-col ${isFullAdmin ? '' : 'hidden'}">${actionCell}</td>
-        `;
-        tbody.appendChild(row);
-    });
-
+    renderEmployeeDetails();
     updateAdminUI();
+}
+
+window.selectEmployee = function(index) {
+    selectedEmpIndex = index;
+    renderEmployees(); // re-render to update selection style and details
+}
+
+function renderEmployeeDetails() {
+    const detailContainer = document.getElementById('employee-detail-container');
+    if (!detailContainer) return;
+    
+    const isFullAdmin = isAdmin && userRole === 'admin';
+
+    if (selectedEmpIndex === null || !currentEmployees[selectedEmpIndex]) {
+        detailContainer.innerHTML = '<div class="center-text" style="color: var(--text-muted); margin-top: 4rem;">Bitte wählen Sie einen Mitarbeiter aus der Liste.</div>';
+        return;
+    }
+
+    const emp = currentEmployees[selectedEmpIndex];
+    
+    if (!isFullAdmin) {
+        detailContainer.innerHTML = `
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">${emp.name}</h2>
+            <div style="color: var(--text-muted); margin-bottom: 2rem;">ID: ${emp.id || '-'}</div>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div><strong>Email:</strong> ${emp.email || '-'}</div>
+                <div><strong>Rolle:</strong> ${emp.isOberarzt ? 'Oberarzt' : 'Assistenzarzt'}</div>
+                <div><strong>Status:</strong> ${emp.jw_active ? 'Aktiv in Verteilung' : 'Inaktiv (Pausiert)'}</div>
+            </div>
+        `;
+        return;
+    }
+
+    detailContainer.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+            <div>
+                <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Mitarbeiter bearbeiten</h2>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Ausgewählt: ${emp.name}</div>
+            </div>
+            <button class="btn btn-danger" onclick="deleteEmployee(${selectedEmpIndex})">🗑️ Löschen</button>
+        </div>
+        
+        <div class="detail-form-group">
+            <label>Name</label>
+            <input type="text" class="edit-field" value="${emp.name || ''}" onchange="updateEmployee(${selectedEmpIndex}, 'name', this.value)">
+        </div>
+        
+        <div class="detail-form-group">
+            <label>System-ID</label>
+            <input type="text" class="edit-field" value="${emp.id || ''}" onchange="updateEmployee(${selectedEmpIndex}, 'id', this.value)">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Muss mit der ID im Planer570 (bzw. Urlaubsplaner) übereinstimmen.</div>
+        </div>
+        
+        <div class="detail-form-group">
+            <label>E-Mail Adresse</label>
+            <input type="email" class="edit-field" value="${emp.email || ''}" onchange="updateEmployee(${selectedEmpIndex}, 'email', this.value)">
+        </div>
+        
+        <div style="display: flex; gap: 2rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" ${emp.isOberarzt ? 'checked' : ''} onchange="updateEmployee(${selectedEmpIndex}, 'isOberarzt', this.checked)">
+                <span style="font-weight: 500;">Ist Oberarzt</span>
+            </label>
+            
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" class="custom-tooltip" data-tooltip="Entfernt den Mitarbeiter temporär aus der Zuteilung (z.B. Elternzeit, Rotation).">
+                <input type="checkbox" ${emp.jw_active ? 'checked' : ''} onchange="updateEmployee(${selectedEmpIndex}, 'jw_active', this.checked)">
+                <span style="font-weight: 500;">Aktiv (in Zuteilung)</span>
+            </label>
+        </div>
+    `;
 }
 
 function updateAdminUI() {
@@ -654,11 +730,10 @@ function updateAdminUI() {
         else employeeTabBtn.classList.add('hidden');
     }
 
-    // Toggle Bulk Import Section
+    // Toggle Bulk Import Section (Removed)
     const bulkImportSection = document.getElementById('bulk-import-section');
     if (bulkImportSection) {
-        if (isFullAdmin) bulkImportSection.classList.remove('hidden');
-        else bulkImportSection.classList.add('hidden');
+        bulkImportSection.classList.add('hidden');
     }
 
     // Toggle Distribution Tab Button
@@ -676,61 +751,92 @@ function updateAdminUI() {
     }
 }
 
-window.parseEmployeeInput = function () {
-    const textarea = document.getElementById('bulk-import-text');
-    if (!textarea) return;
-
-    const text = textarea.value;
-    if (!text.trim()) {
-        alert("Bitte Text eingeben.");
-        return;
-    }
-
-    const lines = text.split('\n');
-    let addedCount = 0;
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (!line) return;
-
-        // Try to extract email
-        // Simple regex for email: something@something.something
-        const emailMatch = line.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/);
-        let email = "@";
-        let name = line;
-
-        if (emailMatch) {
-            email = emailMatch[0];
-            // Remove email from line to get name
-            name = line.replace(email, "").trim();
-            // Clean up name (remove potential brackets/parentheses around email if they were not part of the match)
-            name = name.replace(/[<>()\[\]]/g, "").trim();
-
-            // If name is empty, try to derive from email (format: firstname.lastname@...)
-            if (!name && email.includes('@')) {
-                const localPart = email.split('@')[0];
-                if (localPart.includes('.')) {
-                    name = localPart.split('.').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
-                } else {
-                    name = localPart.charAt(0).toUpperCase() + localPart.slice(1);
-                }
+window.importFromPlaner570 = async function() {
+    if (!confirm("Dies lädt die aktuelle Mitarbeiterliste (inkl. Urlaubsplaner-Einstellungen) aus Firebase herunter und aktualisiert/ergänzt die bestehende Liste.\n\nMöchten Sie fortfahren?")) return;
+    
+    try {
+        const loadingDiv = document.getElementById('loading');
+        if (loadingDiv) loadingDiv.classList.remove('hidden');
+        
+        const docSnap = await db.collection('planer_app_state').doc('currentState').get();
+        if (!docSnap.exists) {
+            throw new Error("Konnte planer_app_state/currentState nicht in Firebase finden.");
+        }
+        
+        const data = docSnap.data();
+        const firebaseEmployees = data.mitarbeiter || [];
+        
+        if (!Array.isArray(firebaseEmployees) || firebaseEmployees.length === 0) {
+            throw new Error("Die Mitarbeiterliste in Firebase ist leer oder fehlerhaft formatiert.");
+        }
+        
+        let addedCount = 0;
+        let updatedCount = 0;
+        
+        firebaseEmployees.forEach(fEmp => {
+            if (!fEmp.name) return;
+            
+            // Try matching by ID first, then by exact name
+            let localEmp = null;
+            if (fEmp.id) {
+                localEmp = currentEmployees.find(e => e.id === fEmp.id);
             }
-        }
-
-        if (name) {
-            currentEmployees.push({ name: name, email: email, active: true });
-            addedCount++;
-        }
-    });
-
-    if (addedCount > 0) {
+            if (!localEmp && fEmp.name) {
+                localEmp = currentEmployees.find(e => e.name === fEmp.name);
+            }
+            
+            // Determine OA status from Firebase data
+            const role = (fEmp.role || fEmp.rolle || '').toLowerCase();
+            const groups = Array.isArray(fEmp.groups) ? fEmp.groups.map(g=>String(g).toLowerCase()) : (fEmp.group ? [String(fEmp.group).toLowerCase()] : []);
+            
+            const isOA = role.includes('oberarzt') || role.includes('foa') || groups.some(g => g.includes('oberarzt'));
+            const isSek = fEmp.name.toLowerCase().includes('sekretariat') || role.includes('sekretariat');
+            const finalIsOA = isOA && !isSek;
+            
+            if (localEmp) {
+                // Update missing/different fields
+                let modified = false;
+                if (!localEmp.id && fEmp.id) { localEmp.id = fEmp.id; modified = true; }
+                if (localEmp.isOberarzt !== finalIsOA) { localEmp.isOberarzt = finalIsOA; modified = true; }
+                if (fEmp.email && (!localEmp.email || localEmp.email === '@' || localEmp.email === '')) {
+                    localEmp.email = fEmp.email;
+                    modified = true;
+                }
+                if (fEmp.stampAlias && !localEmp.stampAlias) {
+                    localEmp.stampAlias = fEmp.stampAlias;
+                    modified = true;
+                }
+                
+                if (modified) updatedCount++;
+            } else {
+                // Add new employee
+                currentEmployees.push({
+                    id: fEmp.id || "",
+                    name: fEmp.name,
+                    email: fEmp.email || "@",
+                    active: true,
+                    jw_active: true, // Default to active for Journal Watch
+                    isOberarzt: finalIsOA,
+                    stampAlias: fEmp.stampAlias || null
+                });
+                addedCount++;
+            }
+        });
+        
         setUnsavedChanges(true);
         renderEmployees();
         renderSchedule(); // Update dropdowns
-        alert(`${addedCount} Mitarbeiter hinzugefügt.\nBitte "Speichern" nicht vergessen!`);
-        textarea.value = ""; // Clear input
-    } else {
-        alert("Keine gültigen Daten gefunden.");
+        
+        if (loadingDiv) loadingDiv.classList.add('hidden');
+        
+        alert(`Import erfolgreich!\n\nNeue Mitarbeiter: ${addedCount}\nAktualisiert: ${updatedCount}\n\nBitte "Speichern" nicht vergessen.`);
+        
+    } catch (e) {
+        const loadingDiv = document.getElementById('loading');
+        if (loadingDiv) loadingDiv.classList.add('hidden');
+        
+        console.error("Import error:", e);
+        alert("Fehler beim Importieren: " + e.message);
     }
 }
 

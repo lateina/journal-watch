@@ -420,3 +420,92 @@ input:checked + .slider:before { transform: translateX(20px); }
         display: none !important;
     }
 }
+/* Employee Admin Layout */
+.emp-admin-layout {
+    display: flex;
+    gap: 1.5rem;
+    height: 600px;
+    background: #fff;
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.emp-list-sidebar {
+    width: 300px;
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+}
+
+.emp-list-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.emp-list-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.emp-list-item {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.emp-list-item:hover {
+    background: #f1f5f9;
+}
+
+.emp-list-item.selected {
+    background: #e0f2fe;
+    border-left: 4px solid var(--primary);
+}
+
+.emp-list-item-name {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.emp-list-item-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.emp-list-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    background: white;
+}
+
+.emp-detail-view {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    background: white;
+}
+
+.detail-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.detail-form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.detail-form-group input[type="text"],
+.detail-form-group input[type="email"] {
+    width: 100%;
+    max-width: 400px;
+}
+
