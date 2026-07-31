@@ -272,7 +272,7 @@ function showError(msg) {
 
 window.getActiveRotandName = function(empName, dateObj) {
     if (!planerEmployees || planerEmployees.length === 0) return null;
-    const pEmp = planerEmployees.find(p => p.name === empName);
+    const pEmp = planerEmployees.find(p => p.name === empName || p.mitarbeiter_name === empName);
     if (!pEmp || !pEmp.is_rotandenstelle) return null;
     
     if (!pEmp.rotanden_namen || !Array.isArray(pEmp.rotanden_namen)) return null;
