@@ -226,7 +226,6 @@ function showError(msg) {
 // --- Rendering ---
 
 function renderSchedule() {
-    if (!isLoggedIn) return;
     const tbody = document.getElementById('schedule-body');
     // Update UI visibility
     const table = document.getElementById('schedule-table');
